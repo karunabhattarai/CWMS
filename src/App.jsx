@@ -1,11 +1,9 @@
-function App() {
+// src/App.jsx
+import AuthPage from "./components/AuthPage";
+import "./App.css";
 
-  return (
-    <>
-      <h1>This is the starting page</h1>
-      {/* hello karuna */}
-    </>
-  )
+function App() {
+  return <AuthPage />;
 }
 
-export default App
+export default App;
