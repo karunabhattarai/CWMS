@@ -1,10 +1,17 @@
-function App() {
+import { BrowserRouter as Router } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Hero from './components/Hero';
+import './App.css';
 
+function App() {
   return (
-    <>
-      <h1>This is the starting page</h1>
-    </>
-  )
+    <Router>
+      <div className="app">
+        <Navbar />
+        <Hero />
+      </div>
+    </Router>
+  );
 }
 
-export default App
+export default App;
