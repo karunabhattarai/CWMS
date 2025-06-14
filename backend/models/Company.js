@@ -16,7 +16,7 @@ const companySchema = new mongoose.Schema({
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Manager',
-    required: true
+    required: false
   }
 
 }, { timestamps: true });
