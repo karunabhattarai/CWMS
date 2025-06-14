@@ -1,47 +1,16 @@
-export default function CTASection() {
+export default function CTA() {
   return (
-    <section
-      className="px-6 md:px-12 py-10 rounded-xl flex flex-col md:flex-row items-center justify-between my-8"
-      style={{ backgroundColor: "#E6F4F4" }}
-    >
-      <div>
-        <h2
-          className="mb-2"
-          style={{
-            fontFamily: "'DM Serif Display', serif",
-            fontSize: "clamp(28px, 4vw, 40px)",
-            color: "#024950",
-            fontWeight: 600,
-          }}
-        >
-          Let's make things happen
+    <section className="bg-green-700 py-12 px-6">
+      <div className="max-w-2xl mx-auto flex flex-col items-center">
+        <h2 className="font-serif text-2xl md:text-3xl font-bold text-white mb-4 text-center">
+          Ready to boost your team's productivity?
         </h2>
-        <p
-          className="mb-4 max-w-lg"
-          style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: "clamp(16px, 1.5vw, 18px)",
-            color: "#024950",
-          }}
+        <a
+          href="/login"
+          className="px-8 py-3 rounded bg-white text-green-700 font-semibold font-sans hover:bg-green-100 transition"
         >
-          CWMIS is all about managing and delegating so that you can focus on
-          the quality work you deserve.
-        </p>
-        <button
-          className="rounded px-6 py-3"
-          style={{
-            backgroundColor: "#964734",
-            color: "#FFFFFF",
-            fontFamily: "'Inter', sans-serif",
-            fontWeight: 500,
-            fontSize: "clamp(16px, 1.5vw, 18px)",
-          }}
-        >
-          Get Started
-        </button>
-      </div>
-      <div className="mt-6 md:mt-0">
-        <img src="/cta-illustration.svg" alt="CTA" className="max-w-xs" />
+          Create Your Free Account
+        </a>
       </div>
     </section>
   );

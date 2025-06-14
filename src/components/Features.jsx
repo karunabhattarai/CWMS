@@ -1,70 +1,45 @@
 const features = [
   {
-    title: "Multi Level Dashboard",
-    icon: "/dashboard-icon.svg",
-    bg: "#E6F4F4",
-    color: "#024950",
+    icon: "🗂️",
+    title: "Project Boards",
+    description:
+      "Organize your projects visually, track progress, and keep everyone in sync.",
   },
   {
-    title: "In-app Chat Functionality",
-    icon: "/chat-icon.svg",
-    bg: "#024950",
-    color: "#FFFFFF",
+    icon: "👥",
+    title: "Team Collaboration",
+    description:
+      "Assign roles, add members, and work together seamlessly on every task.",
   },
   {
-    title: "Email Update and Notification",
-    icon: "/email-icon.svg",
-    bg: "#0FAA4F",
-    color: "#FFFFFF",
-  },
-  {
-    title: "Content Creation Powerhouse",
-    icon: "/content-icon.svg",
-    bg: "#E6F4F4",
-    color: "#024950",
-  },
-  {
-    title: "Analytics and Tracking",
-    icon: "/analytics-icon.svg",
-    bg: "#024950",
-    color: "#FFFFFF",
+    icon: "📈",
+    title: "Progress Tracking",
+    description:
+      "Visualize your progress with clear metrics and keep projects on schedule.",
   },
 ];
 
-export default function FeaturesGrid() {
+export default function Features() {
   return (
-    <section id="features" className="px-6 md:px-12 py-12">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {features.map((feature, idx) => (
+    <section id="features" className="max-w-6xl mx-auto px-6 py-12">
+      <h2 className="font-serif text-2xl md:text-3xl font-bold text-gray-900 mb-8 text-center">
+        Why Choose CWMIS?
+      </h2>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {features.map((feature, i) => (
           <div
-            key={idx}
-            className="rounded-xl p-6 flex flex-col items-start shadow"
-            style={{ backgroundColor: feature.bg, color: feature.color }}
+            key={i}
+            className="bg-white rounded-xl shadow p-6 flex flex-col items-center"
           >
-            <div className="flex items-center mb-4">
-              <img src={feature.icon} alt="" className="w-10 h-10 mr-3" />
-              <h3
-                style={{
-                  fontFamily: "'DM Serif Display', serif",
-                  fontSize: "clamp(24px, 3vw, 32px)",
-                  fontWeight: 600,
-                  color: feature.color === "#FFFFFF" ? "#AFDDE5" : "#0FAA4F",
-                }}
-              >
-                {feature.title}
-              </h3>
+            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-4 text-2xl">
+              <span className="text-green-700">{feature.icon}</span>
             </div>
-            <a
-              href="#"
-              className="mt-auto font-medium"
-              style={{
-                fontFamily: "'Inter', sans-serif",
-                color: "#0FAA4F",
-                fontSize: "clamp(16px, 1.5vw, 18px)",
-              }}
-            >
-              Learn more &rarr;
-            </a>
+            <h3 className="font-serif font-semibold text-lg text-gray-900 mb-2">
+              {feature.title}
+            </h3>
+            <p className="text-gray-600 text-center font-sans">
+              {feature.description}
+            </p>
           </div>
         ))}
       </div>

@@ -68,7 +68,9 @@ export default function Navbar() {
 
   return (
     <nav className="flex items-center justify-between px-6 md:px-12 py-4 bg-white shadow relative">
-      <div className="text-2xl font-bold text-green-900">CWMS</div>
+      <div className="text-2xl font-bold text-green-900">
+        <a href="/">CWMS</a>
+      </div>
       {/* Desktop Menu */}
       <ul className="hidden md:flex items-center space-x-8 font-sans text-green-900">
         {menuItems}

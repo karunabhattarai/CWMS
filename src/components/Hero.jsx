@@ -1,50 +1,27 @@
-export default function HeroSection() {
+export default function Hero() {
   return (
-    <section
-      className="w-full flex flex-col-reverse md:flex-row items-center justify-between px-6 md:px-12 py-12"
-      style={{ backgroundColor: "#024950" }}
-    >
+    <section className="flex flex-col-reverse md:flex-row items-center justify-between px-6 md:px-16 py-12 bg-gray-50">
       <div className="md:w-1/2 mt-8 md:mt-0">
-        <h1
-          className="mb-4"
-          style={{
-            fontFamily: "'DM Serif Display', serif",
-            fontSize: "clamp(32px, 5vw, 56px)",
-            fontWeight: 700,
-            color: "#FFFFFF",
-          }}
-        >
-          One Stop Solution for{" "}
-          <span style={{ color: "#0FAA4F" }}>Creative Mind</span>
+        <h1 className="font-serif font-bold text-4xl md:text-5xl text-gray-900 mb-4">
+          Streamline Your{" "}
+          <span className="text-green-700">Creative Workflow</span>
         </h1>
-        <p
-          className="mb-6"
-          style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: "clamp(16px, 1.5vw, 18px)",
-            color: "#E6F4F4",
-          }}
-        >
-          By the Creatives, for the creatives.
+        <p className="font-sans text-gray-700 text-lg mb-6">
+          Manage projects, collaborate with your team, and track progress
+          effortlessly—all in one place.
         </p>
-        <button
-          className="rounded px-6 py-3"
-          style={{
-            backgroundColor: "#964734",
-            color: "#FFFFFF",
-            fontFamily: "'Inter', sans-serif",
-            fontWeight: 500,
-            fontSize: "clamp(16px, 1.5vw, 18px)",
-          }}
+        <a
+          href="/register"
+          className="inline-block px-8 py-3 rounded bg-green-700 text-white font-semibold font-sans hover:bg-green-800 transition"
         >
           Get Started
-        </button>
+        </a>
       </div>
       <div className="md:w-1/2 flex justify-center">
         <img
-          src="/hero-illustration.svg"
-          alt="Creative"
-          className="max-w-xs md:max-w-md"
+          src="https://www.cflowapps.com/wp-content/uploads/2020/05/business-process-workflow-mapping.png"
+          alt="Workflow Illustration"
+          // className="w-64 md:w-96"
         />
       </div>
     </section>

@@ -11,7 +11,10 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(1);
   const [orgName, setOrgName] = useState("");
   const [roles, setRoles] = useState([]);
-  const [project, setProject] = useState({ name: "", subparts: [{ name: "", days: 1 }] });
+  const [project, setProject] = useState({
+    name: "",
+    subparts: [{ name: "", days: 1 }],
+  });
 
   // Load draft if exists
   useEffect(() => {
@@ -23,7 +26,6 @@ export default function OnboardingPage() {
       setProject(project || { name: "", subparts: [{ name: "", days: 1 }] });
       setStep(step || 1);
     }
-    // eslint-disable-next-line
   }, []);
 
   // Save draft on change
