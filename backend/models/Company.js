@@ -7,23 +7,18 @@ const companySchema = new mongoose.Schema({
     unique: true,
     trim: true
   },
-  address: {
-    type: String,
-  },
-  contactEmail: {
-    type: String,
-    required: true,
-    lowercase: true,
-    trim: true
-  },
-  contactPhone: {
-    type: String,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
 
-const Company = mongoose.model('Company', companySchema);
-export default Company;
+  description: {
+    type: String,
+    default: ''
+  },
+
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Manager',
+    required: true
+  }
+
+}, { timestamps: true });
+
+export default mongoose.model('Company', companySchema);
