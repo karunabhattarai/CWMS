@@ -15,8 +15,8 @@ const companySchema = new mongoose.Schema({
 
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User', // superadmin huna parxa 
-    required: false
+    ref: 'User', // superadmin huna parxa controller bata garauna parxa
+    required: True
   }
 
 }, { timestamps: true });

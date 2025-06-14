@@ -24,7 +24,7 @@ const userSchema = new mongoose.Schema({
     type : String,
     enum: ['superadmin', 'manager'],
     required: true,
-    default: 'manager'
+    default: 'manager' // option dinu pardaina frontendma, just have for superdmin and give superadmin power to make manager
   },
   company: {
     type: mongoose.Schema.Types.ObjectId,
