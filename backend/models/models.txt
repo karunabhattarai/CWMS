@@ -1,0 +1,42 @@
+1. Company
+Represents each client organization using CWMS.
+
+2. User
+Represents employees/managers within a company.
+
+Users have multiple roles.
+
+3. Role
+Job titles within a company (e.g., Editor, Writer).
+
+Users can be assigned multiple roles.
+
+4. TaskTemplate
+Blueprint for common types of tasks.
+
+Contains multiple SubtaskTemplates.
+
+5. SubtaskTemplate
+Defines each subtask in a TaskTemplate.
+
+Has an associated role and expected duration.
+
+6. Task
+A real task created from a TaskTemplate.
+
+Has a deadline, assigned company, etc.
+
+7. Subtask
+Instance of a SubtaskTemplate assigned to a user.
+
+Tracks status, comments, attachments, timestamps.
+
+8. Attachment (Optional, embedded in Subtask)
+Stores info about uploaded files or links for subtasks.
+
+Optional/Future models you might consider later:
+Performance — to track user reliability, completion stats.
+
+Availability — to track when users are free/busy.
+
+SlackTime — to handle buffer times and scheduling adjustments.
