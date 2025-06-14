@@ -5,7 +5,8 @@
 import * as dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import express from 'express';
-
+import authMiddleware from './middleware/authMiddleware.js';
+// Importing routes
 import managerRoutes from './routes/managerRoutes.js';
 import companyRoutes from './routes/companyRoutes.js';
 // import userRoutes from './routes/user.js';
