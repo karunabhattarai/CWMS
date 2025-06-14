@@ -1,5 +1,6 @@
 // src/pages/DashboardPage.jsx
 import { useState } from "react";
+import Sidebar from "../components/Sidebar";
 
 const demoProjects = [
   {
@@ -36,10 +37,11 @@ export default function DashboardPage() {
   const [projects] = useState(demoProjects);
 
   return (
-    <div className="min-h-screen bg-cyan-50 py-10 px-2">
+    <div className="w-full px-4 py-10 bg-cyan-50">
       <h1 className="text-3xl font-bold font-serif text-gray-900 mb-8 text-center">
         Your Projects
       </h1>
+
       <div className="max-w-6xl mx-auto grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {projects.map((project) => (
           <div
@@ -59,6 +61,7 @@ export default function DashboardPage() {
                 {project.status}
               </span>
             </div>
+
             <div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
@@ -70,6 +73,7 @@ export default function DashboardPage() {
                 {project.progress}% complete
               </div>
             </div>
+
             <div className="flex -space-x-2">
               {project.team.map((member, idx) => (
                 <div
@@ -81,6 +85,7 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
+
             <div>
               <div className="text-xs font-semibold text-gray-700 mb-1">
                 Subparts
@@ -88,7 +93,7 @@ export default function DashboardPage() {
               <ul className="text-xs text-gray-500 list-disc list-inside space-y-1">
                 {project.subparts.map((sub) => (
                   <li key={sub.id}>
-                    {sub.name}{" "}
+                    {sub.name}
                     <span className="ml-1 text-gray-400">({sub.status})</span>
                   </li>
                 ))}
@@ -96,12 +101,14 @@ export default function DashboardPage() {
             </div>
           </div>
         ))}
+
         <div className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-xl bg-white">
           <button className="text-gray-500 hover:text-gray-800 px-6 py-4 font-bold text-lg">
             + New Project
           </button>
         </div>
       </div>
+
       <div className="mt-10 text-center text-gray-400 text-sm">
         Click a project card to see task-level progress.
       </div>
