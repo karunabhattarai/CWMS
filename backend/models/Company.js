@@ -15,7 +15,7 @@ const companySchema = new mongoose.Schema({
 
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Manager',
+    ref: 'User', // superadmin huna parxa 
     required: false
   }
 

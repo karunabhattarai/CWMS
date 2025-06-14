@@ -7,7 +7,7 @@ import mongoose from 'mongoose';
 import express from 'express';
 import authMiddleware from './middleware/authMiddleware.js';
 // Importing routes
-import managerRoutes from './routes/managerRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 import companyRoutes from './routes/companyRoutes.js';
 // import userRoutes from './routes/user.js';
 
@@ -29,7 +29,7 @@ const app = express();
 app.use(express.json()); // Middleware to parse JSON bodies
 
 // Routes
-app.use('/api/manager', managerRoutes);
+app.use('/api/user', userRoutes);
 app.use('/api/company', companyRoutes);
 // app.use('/api/user', userRoutes);
 

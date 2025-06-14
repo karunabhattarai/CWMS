@@ -2,7 +2,7 @@
 Represents each client organization using CWMS.
 
 2. User
-Represents employees/managers within a company.
+Represents employees/users within a company.
 
 Users have multiple roles.
 

@@ -16,9 +16,9 @@ const subtaskSchema = new mongoose.Schema({
     ref: 'SubtaskTemplate',
     required: true
   },
-  assignedUser: {
+  assignedMember: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    ref: 'Member'
   },
   status: {
     type: String,
