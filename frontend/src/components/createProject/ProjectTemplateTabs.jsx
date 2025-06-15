@@ -12,7 +12,8 @@ export default function ProjectTemplateTabs({
   getSubtaskTemplateById,
 }) {
   return (
-    <>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Tabs */}
       <div className="flex border-b border-green-100">
         <button
           className={`flex-1 py-4 text-lg font-semibold transition ${
@@ -35,7 +36,9 @@ export default function ProjectTemplateTabs({
           Create New Template
         </button>
       </div>
-      <div className="p-8">
+
+      {/* Content Area */}
+      <div className="py-6 sm:py-8 space-y-6">
         {tab === "select" ? (
           <TemplateSelector
             templates={templates}
@@ -51,6 +54,6 @@ export default function ProjectTemplateTabs({
           />
         )}
       </div>
-    </>
+    </div>
   );
 }

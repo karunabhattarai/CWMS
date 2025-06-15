@@ -6,8 +6,8 @@ import {
   members,
 } from "../dummyData.jsx";
 import { useNavigate } from "react-router-dom";
-import ProjectTemplateTabs from "../components/ProjectTemplateTabs";
-import ProjectDetailsForm from "../components/ProjectDetailsForm";
+import ProjectTemplateTabs from "../components/createProject/ProjectTemplateTabs";
+import ProjectDetailsForm from "../components/createProject/ProjectDetailsForm";
 
 // Helper functions (as before)
 function getTemplateById(id, templates) {
@@ -39,7 +39,7 @@ export default function CreateProjectPage() {
 
   return (
     <div className="min-h-screen bg-cyan-50 flex items-center justify-center px-2 py-8">
-      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-0 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-5xl p-6 sm:p-8 lg:p-10 overflow-hidden">
         <ProjectTemplateTabs
           tab={tab}
           setTab={setTab}
@@ -50,7 +50,6 @@ export default function CreateProjectPage() {
           onTemplateCreated={handleTemplateCreated}
           getSubtaskTemplateById={getSubtaskTemplateById}
         />
-        {/* Show details form only if a template is selected and we're on the "select" tab */}
         {tab === "select" && template && (
           <ProjectDetailsForm
             template={template}
