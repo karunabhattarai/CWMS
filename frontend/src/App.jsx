@@ -6,12 +6,13 @@ import AuthPage from "./pages/AuthPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import DashboardPage from "./pages/DashboardPage";
 import DashboardLayout from "./layouts/DashboardLayout";
+import ProjectsPage from "./pages/ProjectsPage";
+import CreateProjectPage from "./pages/CreateProject";
 
 // Dummy pages for sidebar routes
 const ReportsPage = () => <div className="p-8">Reports Page</div>;
 const MembersPage = () => <div className="p-8">Members Page</div>;
 const RolesPage = () => <div className="p-8">Roles Page</div>;
-const ProjectsPage = () => <div className="p-8">Projects Page</div>;
 const SettingsPage = () => <div className="p-8">Settings Page</div>;
 
 function App() {
@@ -70,6 +71,14 @@ function App() {
           element={
             <DashboardLayout>
               <ProjectsPage />
+            </DashboardLayout>
+          }
+        />
+        <Route
+          path="/createproject"
+          element={
+            <DashboardLayout>
+              <CreateProjectPage />
             </DashboardLayout>
           }
         />
