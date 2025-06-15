@@ -2,12 +2,13 @@ import User from '../models/User.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
- 
+import sendEmail from '../utils/sendEmail.js'; // Assuming you have a utility to send emails
+
 
 // register superadmin and manager
 export const registerSuperAdmin = async(req, res) => {
     try{
-        const { name, email, password, company } = req.body;
+        const { name, email, password } = req.body;
         // Check if all fields are provided
         const existing = await User.findOne({ email });
         if (existing) {
@@ -26,13 +27,27 @@ export const registerSuperAdmin = async(req, res) => {
             name,
             email,
             password,
-            company,
             role: 'superadmin', // Set role to superadmin
             isVerified: false, // default value
             verificationToken: token 
         });
         await newSuperAdmin.save();
-        res.status(201).json({ message: 'SuperAdmin registered successfully' });
+        
+        // Send verification email
+        const verifyLink = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+        const message = `
+        <h1>Email Verification</h1>
+        <p>Please click the link below to verify your email:</p>
+        <a href="${verifyLink}">Verify Email</a> 
+        `;
+
+        await sendEmail(email, 'Verify your email', message);
+        
+        // console.log("Preview URL: ", nodemailer.getTestMessageUrl(info));
+
+        res.status(201).json({ message: 'SuperAdmin registered successfully. Please check your email to verify your account.' });
+        
+
     }
     catch (error) {
         res.status(500).json({ message: 'Internal server error', error: error.message});
@@ -41,17 +56,29 @@ export const registerSuperAdmin = async(req, res) => {
 
 export const registerManager = async(req,res)=>{
     try{
-        const {name,email,password,company} = req.body;
-        // Check if all fields are 
-        if (!name || !email || !password || !company) {
+        const {name,email} = req.body;
+        // Check if all fields are
+
+        if (!name || !email) {
             return res.status(400).json({ message: 'All fields are required' });
         }
+        
+        //check company exists or not
+        const company = req.user.company; // Assuming the company is set in the request by auth middleware
+        console.log('Registering manager under company:', company);
+        if (!company) {
+            return res.status(400).json({ message: 'Your user does not have a company assigned' });
+        }
+
+        
         // seprate company check parxa kinai no idea
         const existing = await User.findOne({ email }); //
         if (existing){
             return res.status(400).json({ message: ' Manager already exists' });
         }
-
+        // password is not required for manager registration dummy will be set at first
+        const password = '123456'; // Set a dummy password for manager registration 
+        
         //hash the password
         const hashedPassword = await bcrypt.hash(password,10);
 
@@ -72,7 +99,18 @@ export const registerManager = async(req,res)=>{
 
         await newManager.save();
 
-        res.status(201).json({message: 'Manager registered successfully', manager: newManager});
+        // Send verification email
+        const verifyLink = `${process.env.BACKEND_URL}/verify-email?token=${token}`;
+        const message = `
+        <h1>Email Verification</h1>
+        <p>Please click the link below to verify your email:</p>
+        <a href="${verifyLink}">Verify Email</a>
+        `;
+        await sendEmail(email, 'Verify your email', message);
+        // console.log("Preview URL: ", nodemailer.getTestMessageUrl(info));
+
+        res.status(201).json({message: 'Manager registered successfully'});
+
     }catch(error){
         res.status(500).json({ message: 'Internal server error', error: error.message });
     }
@@ -80,7 +118,7 @@ export const registerManager = async(req,res)=>{
 
 
 //verify above users with email
-export const verifyUserEmail = asym(req,res) => {
+export const verifyUserEmail = async(req,res) => { //issue is? 
     // is called when user clicks on the verification link in the email
     // the link should contain the token as a query parameter
     try{
@@ -110,7 +148,7 @@ export const loginUser = async (req,res) => {
         const {email, password} = req.body;
         // Check if email and password are provided
 
-        const user = await User.findOne({ email });\
+        const user = await User.findOne({ email });
         if (!user) {
             return res.status(404).json({ message: 'user not found' });
         }

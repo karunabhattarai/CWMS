@@ -17,10 +17,7 @@ dotenv.config();
 // require('dotenv').config(); // "type": "module" yo rakhexa package.jsonma
 // const mongoose = require('mongoose');
 
-mongoose.connect(process.env.URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
+mongoose.connect(process.env.URI)
 .then(() => console.log("✅ Connected to MongoDB Atlas"))
 .catch(err => console.error("❌ MongoDB connection error:", err));
 
