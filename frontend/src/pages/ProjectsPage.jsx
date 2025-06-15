@@ -2,7 +2,6 @@
 import { useState, useMemo } from "react";
 import {
   tasks as allTasks,
-  taskTemplates as allTemplates,
   roles,
   members,
   subtasks as allSubtasks,
@@ -50,22 +49,6 @@ function getProjectStatusAndProgress(task, subtasks) {
 export default function ProjectsPage() {
   const [tasks, setTasks] = useState(allTasks);
   const [subtasks, setSubtasks] = useState(allSubtasks);
-  const [templates, setTemplates] = useState(allTemplates);
-
-  // Modal state
-  const [showModal, setShowModal] = useState(false);
-  const [showTemplateForm, setShowTemplateForm] = useState(false);
-  const [selectedTemplateId, setSelectedTemplateId] = useState(null);
-
-  // Template creation form state
-  const [newTemplate, setNewTemplate] = useState({
-    name: "",
-    description: "",
-    subtasks: [
-      { name: "", estimatedDurationDays: 1, role: roles[0]?._id || "" },
-    ],
-  });
-  const [templateFormError, setTemplateFormError] = useState("");
 
   // Search & filter
   const [search, setSearch] = useState("");
@@ -95,47 +78,6 @@ export default function ProjectsPage() {
     return filtered;
   }, [tasks, search, statusFilter, dateSort, subtasks]);
 
-  function handleCreateTemplate(e) {
-    e.preventDefault();
-    if (!newTemplate.name.trim()) {
-      setTemplateFormError("Template name is required.");
-      return;
-    }
-    if (newTemplate.subtasks.length === 0) {
-      setTemplateFormError("At least one subpart is required.");
-      return;
-    }
-    for (const sub of newTemplate.subtasks) {
-      if (!sub.name.trim() || !sub.estimatedDurationDays || !sub.role) {
-        setTemplateFormError(
-          "All subparts must have name, duration, and role."
-        );
-        return;
-      }
-    }
-    const newId = "tpl" + (templates.length + 1);
-    const tpl = {
-      _id: newId,
-      name: newTemplate.name,
-      description: newTemplate.description,
-      subtasks: newTemplate.subtasks.map((s, i) => ({
-        ...s,
-        _id: `${newId}-sub${i + 1}`,
-      })),
-    };
-    setTemplates((prev) => [...prev, tpl]);
-    setShowTemplateForm(false);
-    setSelectedTemplateId(newId);
-    setNewTemplate({
-      name: "",
-      description: "",
-      subtasks: [
-        { name: "", estimatedDurationDays: 1, role: roles[0]?._id || "" },
-      ],
-    });
-    setTemplateFormError("");
-  }
-
   function handleDeleteProject(taskId) {
     setTasks((prev) => prev.filter((t) => t._id !== taskId));
   }
@@ -153,11 +95,8 @@ export default function ProjectsPage() {
           <h1 className="text-2xl font-bold font-serif text-green-900">
             All Projects
           </h1>
-          <button
-            className="bg-green-700 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-800 transition"
-            onClick={() => setShowModal(true)}
-          >
-            + Start a New Project
+          <button className="bg-green-700 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-800 transition">
+            <a href="/createproject">+ Start a New Project</a>
           </button>
         </div>
         <ProjectSearchFilter
@@ -178,23 +117,6 @@ export default function ProjectsPage() {
           getProjectStatusAndProgress={getProjectStatusAndProgress}
         />
       </div>
-      <ProjectModal
-        show={showModal}
-        onClose={() => {
-          setShowModal(false);
-          setShowTemplateForm(false);
-        }}
-        templates={templates}
-        roles={roles}
-        showTemplateForm={showTemplateForm}
-        setShowTemplateForm={setShowTemplateForm}
-        selectedTemplateId={selectedTemplateId}
-        setSelectedTemplateId={setSelectedTemplateId}
-        newTemplate={newTemplate}
-        setNewTemplate={setNewTemplate}
-        templateFormError={templateFormError}
-        handleCreateTemplate={handleCreateTemplate}
-      />
     </div>
   );
 }
