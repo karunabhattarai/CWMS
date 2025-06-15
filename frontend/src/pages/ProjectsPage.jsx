@@ -8,7 +8,6 @@ import {
 } from "../dummyData.jsx";
 import ProjectList from "../components/projects/ProjectList";
 import ProjectSearchFilter from "../components/projects/ProjectSearchFilter";
-import ProjectModal from "../components/projects/ProjectModal";
 
 const statusStyles = {
   completed: "bg-green-100 text-green-700 border border-green-200",

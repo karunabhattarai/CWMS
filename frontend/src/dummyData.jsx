@@ -86,6 +86,49 @@ export const members = [
     company: "ytco1",
     roles: ["role4"],
   },
+  // Additional members for better dropdown demonstration:
+  {
+    _id: "mem5",
+    name: "Priya Singh",
+    email: "priya.singh@techvision.com",
+    company: "ytco1",
+    roles: ["role1"], // Content Strategist
+  },
+  {
+    _id: "mem6",
+    name: "Carlos Alvarez",
+    email: "carlos.alvarez@techvision.com",
+    company: "ytco1",
+    roles: ["role2"], // Video Producer/Editor
+  },
+  {
+    _id: "mem7",
+    name: "Emily Chen",
+    email: "emily.chen@techvision.com",
+    company: "ytco1",
+    roles: ["role3"], // Graphic Designer
+  },
+  {
+    _id: "mem8",
+    name: "Fatima Zahra",
+    email: "fatima.zahra@techvision.com",
+    company: "ytco1",
+    roles: ["role4"], // Social Media Manager
+  },
+  {
+    _id: "mem9",
+    name: "Brian O'Connor",
+    email: "brian.oconnor@techvision.com",
+    company: "ytco1",
+    roles: ["role1", "role2"], // Multi-role
+  },
+  {
+    _id: "mem10",
+    name: "Sofia Rossi",
+    email: "sofia.rossi@techvision.com",
+    company: "ytco1",
+    roles: ["role3", "role4"], // Multi-role
+  },
 ];
 
 export const subtaskTemplates = [
@@ -166,6 +209,7 @@ export const tasks = [
     deadline: "2023-11-10T00:00:00Z",
     startDate: "2023-10-25T00:00:00Z",
     status: "inprogress",
+    priority: "high",
     subtasks: ["sub1", "sub2", "sub3", "sub4", "sub5", "sub6", "sub7"],
   },
   {
@@ -176,6 +220,7 @@ export const tasks = [
     deadline: "2023-11-24T00:00:00Z",
     startDate: "2023-11-06T00:00:00Z",
     status: "scheduled",
+    priority: "moderate",
     subtasks: ["sub8", "sub9", "sub10", "sub11", "sub12", "sub13", "sub14"],
   },
   {
@@ -186,7 +231,41 @@ export const tasks = [
     deadline: "2023-11-30T00:00:00Z",
     startDate: "2023-11-01T00:00:00Z",
     status: "delayed",
+    priority: "urgent",
     subtasks: ["sub15", "sub16", "sub17"],
+  },
+  {
+    _id: "task4",
+    company: "ytco1",
+    taskTemplate: "tt1",
+    name: "Nothing Phone 3 Hands-on Review",
+    deadline: "2025-06-17T00:00:00Z",
+    startDate: "2025-06-13T00:00:00Z",
+    status: "inprogress",
+    priority: "high",
+    subtasks: ["sub18", "sub19", "sub20", "sub21", "sub22", "sub23", "sub24"],
+  },
+  {
+    _id: "task5",
+    company: "ytco1",
+    taskTemplate: "tt1",
+    name: "Pixel 9 Pro Unboxing & First Impressions",
+    deadline: "2025-06-09T00:00:00Z",
+    startDate: "2025-05-30T00:00:00Z",
+    status: "completed",
+    priority: "moderate",
+    subtasks: ["sub25", "sub26", "sub27", "sub28", "sub29", "sub30", "sub31"],
+  },
+  {
+    _id: "task6",
+    company: "ytco1",
+    taskTemplate: "tt2",
+    name: "June Growth Campaign: Budget Phones",
+    deadline: "2025-06-16T00:00:00Z",
+    startDate: "2025-06-14T00:00:00Z",
+    status: "scheduled",
+    priority: "urgent",
+    subtasks: ["sub32", "sub33", "sub34"],
   },
 ];
 
@@ -255,6 +334,143 @@ export const subtasks = [
   {
     _id: "sub16",
     task: "task3",
+    subtaskTemplate: "stt6",
+    assignedMember: "mem4",
+    status: "scheduled",
+  },
+  // task4 subtasks - inprogress
+  {
+    _id: "sub18",
+    task: "task4",
+    subtaskTemplate: "stt1",
+    assignedMember: "mem1",
+    status: "completed",
+    startedAt: "2025-06-12T09:00:00Z",
+    completedAt: "2025-06-13T12:00:00Z",
+  },
+  {
+    _id: "sub19",
+    task: "task4",
+    subtaskTemplate: "stt2",
+    assignedMember: "mem1",
+    status: "completed",
+    startedAt: "2025-06-13T13:00:00Z",
+    completedAt: "2025-06-14T10:00:00Z",
+  },
+  {
+    _id: "sub20",
+    task: "task4",
+    subtaskTemplate: "stt3",
+    assignedMember: "mem2",
+    status: "inprogress",
+    comment: "Shooting with new lighting setup",
+    startedAt: "2025-06-14T11:00:00Z",
+  },
+  {
+    _id: "sub21",
+    task: "task4",
+    subtaskTemplate: "stt4",
+    assignedMember: "mem2",
+    status: "scheduled",
+  },
+  {
+    _id: "sub22",
+    task: "task4",
+    subtaskTemplate: "stt5",
+    assignedMember: "mem3",
+    status: "scheduled",
+  },
+  {
+    _id: "sub23",
+    task: "task4",
+    subtaskTemplate: "stt6",
+    assignedMember: "mem4",
+    status: "scheduled",
+  },
+  {
+    _id: "sub24",
+    task: "task4",
+    subtaskTemplate: "stt7",
+    assignedMember: "mem4",
+    status: "scheduled",
+  },
+
+  // task5 subtasks - completed
+  {
+    _id: "sub25",
+    task: "task5",
+    subtaskTemplate: "stt1",
+    assignedMember: "mem1",
+    status: "completed",
+    startedAt: "2025-05-30T09:00:00Z",
+    completedAt: "2025-05-31T15:00:00Z",
+  },
+  {
+    _id: "sub26",
+    task: "task5",
+    subtaskTemplate: "stt2",
+    assignedMember: "mem1",
+    status: "completed",
+    startedAt: "2025-06-01T09:00:00Z",
+    completedAt: "2025-06-01T12:00:00Z",
+  },
+  {
+    _id: "sub27",
+    task: "task5",
+    subtaskTemplate: "stt3",
+    assignedMember: "mem2",
+    status: "completed",
+    startedAt: "2025-06-02T10:00:00Z",
+    completedAt: "2025-06-03T17:00:00Z",
+  },
+  {
+    _id: "sub28",
+    task: "task5",
+    subtaskTemplate: "stt4",
+    assignedMember: "mem2",
+    status: "completed",
+    startedAt: "2025-06-03T18:00:00Z",
+    completedAt: "2025-06-05T16:00:00Z",
+  },
+  {
+    _id: "sub29",
+    task: "task5",
+    subtaskTemplate: "stt5",
+    assignedMember: "mem3",
+    status: "completed",
+    startedAt: "2025-06-05T09:00:00Z",
+    completedAt: "2025-06-05T14:00:00Z",
+  },
+  {
+    _id: "sub30",
+    task: "task5",
+    subtaskTemplate: "stt6",
+    assignedMember: "mem4",
+    status: "completed",
+    startedAt: "2025-06-06T09:00:00Z",
+    completedAt: "2025-06-06T13:00:00Z",
+  },
+  {
+    _id: "sub31",
+    task: "task5",
+    subtaskTemplate: "stt7",
+    assignedMember: "mem4",
+    status: "completed",
+    startedAt: "2025-06-07T10:00:00Z",
+    completedAt: "2025-06-08T10:00:00Z",
+  },
+
+  // task6 subtasks - scheduled
+  {
+    _id: "sub32",
+    task: "task6",
+    subtaskTemplate: "stt1",
+    assignedMember: "mem1",
+    status: "scheduled",
+  },
+  {
+    _id: "sub33",
+    task: "task6",
     subtaskTemplate: "stt6",
     assignedMember: "mem4",
     status: "scheduled",
