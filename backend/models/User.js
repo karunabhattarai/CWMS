@@ -34,6 +34,14 @@ const userSchema = new mongoose.Schema({
       // company is required for managers only, not for superadmin
       return this.role === 'manager';
     }
+  },
+  isVerified: {
+  type: Boolean,
+  default: false
+  },
+
+  verificationToken: {
+    type: String
   }
 
 }, { timestamps: true });
