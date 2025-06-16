@@ -48,7 +48,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-cyan-50 flex flex-col items-center justify-center py-8">
+    <div className="min-h-screen bg-[#efeee8] flex flex-col items-center justify-center py-8">
       <OnboardingStepper step={step} />
       {step === 1 && (
         <OnboardingOrgStep

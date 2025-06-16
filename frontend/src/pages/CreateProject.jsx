@@ -38,7 +38,7 @@ export default function CreateProjectPage() {
   }
 
   return (
-    <div className="min-h-screen bg-cyan-50 flex items-center justify-center px-2 py-8">
+    <div className="min-h-screen bg-[#efeee8] flex items-center justify-center px-2 py-8">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-5xl p-6 sm:p-8 lg:p-10 overflow-hidden">
         <ProjectTemplateTabs
           tab={tab}

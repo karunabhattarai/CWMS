@@ -11,7 +11,10 @@ export default function ProjectCard({
 
   return (
     <div className="bg-white rounded-xl shadow border border-green-100 p-6 flex flex-col gap-4 hover:shadow-md transition">
-      <div className="flex items-center justify-between">
+      <div
+        className="flex items-center justify-between"
+        onClick={() => onView(project._id)}
+      >
         <span className="text-lg font-bold font-serif text-green-900">
           {project.name}
         </span>
@@ -47,19 +50,7 @@ export default function ProjectCard({
           </div>
         ))}
       </div>
-      <div>
-        <div className="text-xs font-semibold text-green-800 mb-1">
-          Subparts
-        </div>
-        <ul className="text-xs text-green-700 list-disc list-inside space-y-1">
-          {(project.subparts || []).map((sub) => (
-            <li key={sub.id || sub._id}>
-              {sub.name}
-              <span className="ml-1 text-green-400">({sub.status})</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+
       <div className="flex gap-2 mt-2">
         <button
           className="px-3 py-1 rounded bg-green-100 text-green-800 text-xs font-semibold hover:bg-green-200 transition"
@@ -72,12 +63,6 @@ export default function ProjectCard({
           onClick={() => onDelete(project._id)}
         >
           Delete
-        </button>
-        <button
-          className="px-3 py-1 rounded bg-green-700 text-white text-xs font-semibold hover:bg-green-800 transition"
-          onClick={() => onView(project._id)}
-        >
-          View
         </button>
       </div>
     </div>

@@ -45,7 +45,7 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div className="w-full px-4 py-10 bg-cyan-50 min-h-screen">
+    <div className="w-full px-4 py-10 bg-[#efeee8] min-h-screen">
       <h1 className="text-3xl font-bold font-serif text-gray-900 mb-8 text-center">
         Organizational Overview
       </h1>

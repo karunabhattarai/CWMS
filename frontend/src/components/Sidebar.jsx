@@ -25,7 +25,7 @@ export default function Sidebar() {
 
   // Sidebar width for expanded/collapsed
   const sidebarWidth = "w-64";
-  const sidebarBg = "bg-cyan-50";
+  const sidebarBg = "bg-[#efeee8]";
 
   return (
     <>

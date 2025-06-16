@@ -5,7 +5,7 @@ import CTASection from "../components/CTA";
 
 export default function LandingPage() {
   return (
-    <div  className="bg-cyan-50">
+    <div className="bg-[#efeee8]">
       <HeroSection />
       <ServicesSection />
       <FeaturesGrid />
