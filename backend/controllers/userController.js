@@ -34,7 +34,7 @@ export const registerSuperAdmin = async(req, res) => {
         await newSuperAdmin.save();
         
         // Send verification email
-        const verifyLink = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+        const verifyLink = `${process.env.BACKEND_URL}/api/user/verify-email?token=${token}`;
         const message = `
         <h1>Email Verification</h1>
         <p>Please click the link below to verify your email:</p>
@@ -100,7 +100,7 @@ export const registerManager = async(req,res)=>{
         await newManager.save();
 
         // Send verification email
-        const verifyLink = `${process.env.BACKEND_URL}/verify-email?token=${token}`;
+        const verifyLink = `${process.env.BACKEND_URL}/api/user/verify-email?token=${token}`;
         const message = `
         <h1>Email Verification</h1>
         <p>Please click the link below to verify your email:</p>
