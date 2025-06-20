@@ -5,7 +5,6 @@
 import * as dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import express from 'express';
-import authMiddleware from './middleware/authMiddleware.js';
 // Importing routes
 import userRoutes from './routes/userRoutes.js';
 import companyRoutes from './routes/companyRoutes.js';
@@ -28,7 +27,6 @@ app.use(express.json()); // Middleware to parse JSON bodies
 // Routes
 app.use('/api/user', userRoutes);
 app.use('/api/company', companyRoutes);
-// app.use('/api/user', userRoutes);
 
 
 const PORT = process.env.PORT || 5000;

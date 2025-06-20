@@ -6,7 +6,7 @@ const authMiddleware = async (req,res,next) => {
 
     //check if authorization header is present and starts with 'Bearer '
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ message: 'Unauthorizedd' });
+        return res.status(401).json({ message: 'Unauthorizeddd' });
     }
 
     const token = authHeader.split(' ')[1];
