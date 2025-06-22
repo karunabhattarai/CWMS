@@ -18,7 +18,8 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true,
-    minlength: 6
+    minlength: 6,
+    select: false
   },
   role:{
     type : String,
@@ -41,15 +42,16 @@ const userSchema = new mongoose.Schema({
   },
 
   verificationToken: {
-    type: String
+    type: String,
+    default: null
   },
   resetPasswordToken: {
   type: String,
-  default: null,
+  default: null
   },
   resetPasswordExpires: {
     type: Date,
-    default: null,
+    default: null
   }
 
 }, { timestamps: true });

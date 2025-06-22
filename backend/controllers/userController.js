@@ -265,7 +265,7 @@ export const deleteUser = async(req,res) => {
         }
 
         // Delete user
-        await user.remove();
+        await User.deleteOne({ _id: id });
         res.status(200).json({ message: 'User deleted successfully' });
     }
     catch(err){
@@ -277,7 +277,9 @@ export const deleteUser = async(req,res) => {
 export const changePassword = async (req, res) => {
     try {
         const { oldPassword, newPassword } = req.body;
-        const user = req.user; // User is attached to the request by auth middleware
+        // const user = req.user; // User is attached to the request by auth middleware // so what happened was when this was done, no password was sent and as such + password is added , which allows for comparision
+        const user = await User.findById(req.user._id).select('+password');
+        
 
         if (!oldPassword || !newPassword) {
             return res.status(400).json({ message: 'Old password and new password are required' });
@@ -312,12 +314,12 @@ export const requestPasswordReset = async (req, res) => {
 
         //generate token 
         const token = crypto.randomBytes(32).toString('hex');
-
+        console.log("token is : ", token);
         user.resetPasswordToken = token;
-        user.resetPasswordExpires = Date.now()+ 1000*0*15; // token is valid for 15 min
+        user.resetPasswordExpires = Date.now()+ 1000*60*15; // token is valid for 15 min
         await user.save();
 
-        const resetLink =`${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+        const resetLink =`${process.env.BACKEND_URL}/reset-password?token=${token}`;
         const message = `
             <h1>Password Reset</h1>
             <p>Click below to reset your password: </p>
@@ -332,12 +334,12 @@ export const requestPasswordReset = async (req, res) => {
     }
 };
 export const resetPassword = async (req, res) => {
-  const { email, newPassword, resetToken } = req.body;
+  //const { email, newPassword, resetToken } = req.body;
 
   try {
+
     // Find user by email and reset token
-    const {token} = req.query;
-    const {newPassword} = req.body;
+    const { token, newPassword } = req.body;
     if (!token || !newPassword) {
       return res.status(400).json({ message: 'Reset token and new password are required' });
     }
@@ -346,7 +348,7 @@ export const resetPassword = async (req, res) => {
         resetPasswordExpires: { $gt: Date.now() }, // Check if token is still valid
     });
         if (!user) {
-      return res.status(400).json({ message: 'Invalid or expired reset token' });
+            return res.status(400).json({ message: 'Invalid or expired reset token' });
     }
     // Update user's password
     user.password = newPassword;
