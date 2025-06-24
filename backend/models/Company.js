@@ -14,13 +14,12 @@ const companySchema = new mongoose.Schema(
       default: "",
     },
 
-    createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User", // superadmin huna parxa controller bata garauna parxa
-      required: true,
-    },
-  },
-  { timestamps: true }
-);
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User', // superadmin huna parxa controller bata garauna parxa
+    required: true
+  }
+
+}, { timestamps: true });
 
 export default mongoose.model("Company", companySchema);
