@@ -1,5 +1,5 @@
 // middleware/roleMiddleware.js
-
+// this is not for role model, but for manager and superadmin control 
 import User from '../models/User.js';
 
 const allowRoles = (...allowedRoles) => {

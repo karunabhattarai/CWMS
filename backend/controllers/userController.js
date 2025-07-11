@@ -109,7 +109,7 @@ export const registerManager = async(req,res)=>{
         await sendEmail(email, 'Verify your email', message);
         // console.log("Preview URL: ", nodemailer.getTestMessageUrl(info));
 
-        res.status(201).json({message: 'Manager registered successfully'});
+        res.status(201).json({message: 'Manager registered successfully. Email Verification Link sent to email'});
 
     }catch(error){
         res.status(500).json({ message: 'Internal server error', error: error.message });
@@ -147,8 +147,10 @@ export const loginUser = async (req,res) => {
     try{
         const {email, password} = req.body;
         // Check if email and password are provided
-
-        const user = await User.findOne({ email });
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email and password are required' });
+        }
+        const user = await User.findOne({ email }).select('+password');
         if (!user) {
             return res.status(404).json({ message: 'user not found' });
         }
@@ -183,9 +185,18 @@ export const loginUser = async (req,res) => {
 
 // Get all users
 export const getAllUsers = async (req, res) => {
-    const Users = await User.find().populate('company');
-    res.json(Users);
+  try {
+    if (!req.user.company) {
+      return res.status(400).json({ message: 'You are not assigned to any company' });
+    }
+
+    const users = await User.find({ company: req.user.company }).populate('company').select('-password');
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
 };
+
 
 
 // get single user

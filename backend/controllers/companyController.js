@@ -1,5 +1,13 @@
 // controllers/companyController.js
 import Company from '../models/Company.js';
+import User from '../models/User.js';
+import Role from '../models/Role.js';
+import Member from '../models/Member.js';
+// import TaskTemplate from '../models/TaskTemplate.js';
+// import SubtaskTemplate from '../models/SubtaskTemplate.js';
+// import Task from '../models/Task.js';
+// import Subtask from '../models/Subtask.js';  // Add after implement
+// importing for cascade delete
 
 export const createCompany = async (req, res) => {
   try {
@@ -65,6 +73,7 @@ export const updateCompany = async (req, res) => {
   }
 };
 
+// seriousss deletes everything except the superadmin
 export const deleteCompany = async (req, res) => {
   try {
     if (!req.user.company) {
@@ -76,15 +85,26 @@ export const deleteCompany = async (req, res) => {
       return res.status(404).json({ message: 'Company not found' });
     }
 
-    // await Company.deleteOne({ _id: req.user.company });
-    await company.deleteOne(); // simpler 
+    const companyId = company._id;
 
+    // Delete company itself
+    await company.deleteOne();
 
-    // Optionally remove company reference from user
+    // Cascade delete related data
+    await Promise.all([
+      User.deleteMany({ company: companyId, role: { $ne: 'superadmin' }}),
+      Role.deleteMany({ company: companyId }),
+      Member.deleteMany({ company: companyId }),
+      // TaskTemplate.deleteMany({ company: companyId }),
+      // SubtaskTemplate.deleteMany({ company: companyId }),
+      // Task.deleteMany({ company: companyId }),
+      // Subtask.deleteMany({ company: companyId }),
+    ]);
+
     req.user.company = null;
     await req.user.save();
 
-    res.status(200).json({ message: 'Company deleted successfully' });
+    res.status(200).json({ message: 'Company and related data deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }

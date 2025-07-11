@@ -24,7 +24,7 @@ router.post(
 router.get(
   '/', 
   authMiddleware,
-  allowRoles('superadmin, manager'), // Allow both superadmin and manager
+  allowRoles('superadmin', 'manager'), // Allow both superadmin and manager
   getCompany
 );
 
