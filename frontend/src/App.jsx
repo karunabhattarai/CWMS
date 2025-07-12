@@ -2,17 +2,20 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+
 import AuthPage from "./pages/AuthPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import DashboardPage from "./pages/DashboardPage";
 import DashboardLayout from "./layouts/DashboardLayout";
+
 import ProjectsPage from "./pages/ProjectsPage";
 import CreateProjectPage from "./pages/CreateProject";
+import RolesPage from "./pages/RolesPage";
+import MembersPage from "./pages/MembersPage";
+import RegisterCompanyPage from "./pages/RegisterCompanyPage";
 
 // Dummy pages for sidebar routes
 const ReportsPage = () => <div className="p-8">Reports Page</div>;
-const MembersPage = () => <div className="p-8">Members Page</div>;
-const RolesPage = () => <div className="p-8">Roles Page</div>;
 const SettingsPage = () => <div className="p-8">Settings Page</div>;
 
 function App() {
@@ -32,6 +35,7 @@ function App() {
         />
         <Route path="/login" element={<AuthPage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
+        <Route path="/company-registration" element={<RegisterCompanyPage />} />
 
         {/* Dashboard and sidebar routes */}
         <Route

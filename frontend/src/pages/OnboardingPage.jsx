@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import OnboardingStepper from "../components/onboarding/OnBoardingStepper";
-import OnboardingOrgStep from "../components/onboarding/OnBoardingOrgStep";
 import OnboardingRolesStep from "../components/onboarding/OnBoardingRolesStep";
 import OnboardingProjectStep from "../components/onboarding/OnBoardingProjectStep";
 import OnboardingSummaryStep from "../components/onboarding/OnBoardingSummaryStep";
@@ -9,40 +8,37 @@ const LOCAL_KEY = "cwmis_onboarding_draft";
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(1);
-  const [orgName, setOrgName] = useState("");
   const [roles, setRoles] = useState([]);
   const [project, setProject] = useState({
     name: "",
-    subparts: [{ name: "", days: 1 }],
+    subparts: [{ name: "", days: 1, role: "" }],
   });
 
   // Load draft if exists
   useEffect(() => {
     const draft = localStorage.getItem(LOCAL_KEY);
     if (draft) {
-      const { orgName, roles, project, step } = JSON.parse(draft);
-      setOrgName(orgName || "");
+      const { roles, project, step } = JSON.parse(draft);
       setRoles(roles || []);
-      setProject(project || { name: "", subparts: [{ name: "", days: 1 }] });
+      setProject(
+        project || { name: "", subparts: [{ name: "", days: 1, role: "" }] }
+      );
       setStep(step || 1);
     }
   }, []);
 
   // Save draft on change
   useEffect(() => {
-    localStorage.setItem(
-      LOCAL_KEY,
-      JSON.stringify({ orgName, roles, project, step })
-    );
-  }, [orgName, roles, project, step]);
+    localStorage.setItem(LOCAL_KEY, JSON.stringify({ roles, project, step }));
+  }, [roles, project, step]);
 
   const handleSkip = () => {
     localStorage.removeItem(LOCAL_KEY);
     window.location.href = "/dashboard";
   };
 
-  const handleSubmit = () => {
-    // Here, send to backend if needed
+ 
+  const handleSubmit = async () => {
     localStorage.removeItem(LOCAL_KEY);
     window.location.href = "/dashboard";
   };
@@ -51,35 +47,27 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-[#efeee8] flex flex-col items-center justify-center py-8">
       <OnboardingStepper step={step} />
       {step === 1 && (
-        <OnboardingOrgStep
-          orgName={orgName}
-          setOrgName={setOrgName}
+        <OnboardingRolesStep
+          roles={roles}
+          setRoles={setRoles} // This will get roles with _id after backend POST
           onNext={() => setStep(2)}
           onSkip={handleSkip}
         />
       )}
       {step === 2 && (
-        <OnboardingRolesStep
+        <OnboardingProjectStep
+          project={project}
+          setProject={setProject}
           roles={roles}
-          setRoles={setRoles}
           onNext={() => setStep(3)}
           onBack={() => setStep(1)}
         />
       )}
       {step === 3 && (
-        <OnboardingProjectStep
-          project={project}
-          setProject={setProject}
-          onNext={() => setStep(4)}
-          onBack={() => setStep(2)}
-        />
-      )}
-      {step === 4 && (
         <OnboardingSummaryStep
-          orgName={orgName}
           roles={roles}
           project={project}
-          onBack={() => setStep(3)}
+          onBack={() => setStep(2)}
           onSubmit={handleSubmit}
         />
       )}

@@ -1,44 +1,67 @@
 import { useState, useEffect } from "react";
+import axios from "axios";
 
-const DEMO_ROLES = [
-  {
-    name: "",
-    employees: [{ name: "", email: "" }],
-  },
-];
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 export default function OnboardingRolesStep({
   roles,
   setRoles,
   onNext,
-  onBack,
+  onSkip,
 }) {
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
+  // On mount, initialize roles if needed
   useEffect(() => {
-    if (!roles || roles.length === 0) setRoles(DEMO_ROLES);
+    if (!roles || roles.length === 0)
+      setRoles([{ name: "", employees: [{ name: "", email: "" }] }]);
     // eslint-disable-next-line
   }, []);
 
+  // Remove a role (delete from backend if it has _id)
+  const removeRole = async (idx) => {
+    if (roles.length === 1) return;
+    const roleToRemove = roles[idx];
+    if (roleToRemove._id) {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem("token");
+        await axios.delete(`${API_BASE}/api/role/${roleToRemove._id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
+        });
+      } catch (err) {
+        setError(
+          err.response?.data?.message || err.message || "Failed to delete role"
+        );
+        setLoading(false);
+        return;
+      }
+      setLoading(false);
+    }
+    setRoles(roles.filter((_, i) => i !== idx));
+  };
+
+  // Add a new blank role (frontend only)
+  const addRole = () =>
+    setRoles([...roles, { name: "", employees: [{ name: "", email: "" }] }]);
+
+  // Handle role name change (frontend only)
   const handleRoleChange = (idx, value) => {
     const updated = [...roles];
     updated[idx].name = value;
     setRoles(updated);
   };
 
+  // Handle employee field changes (frontend only)
   const handleEmployeeChange = (roleIdx, empIdx, field, value) => {
     const updated = [...roles];
     updated[roleIdx].employees[empIdx][field] = value;
     setRoles(updated);
   };
 
-  const addRole = () =>
-    setRoles([...roles, { name: "", employees: [{ name: "", email: "" }] }]);
-  const removeRole = (idx) => {
-    if (roles.length === 1) return;
-    setRoles(roles.filter((_, i) => i !== idx));
-  };
-
+  // Add/remove employees (frontend only)
   const addEmployee = (roleIdx) => {
     const updated = [...roles];
     updated[roleIdx].employees.push({ name: "", email: "" });
@@ -53,6 +76,7 @@ export default function OnboardingRolesStep({
     setRoles(updated);
   };
 
+  // Validation before moving to next step
   const validate = () => {
     if (!roles.length) return "At least one role is required.";
     for (let r of roles) {
@@ -68,14 +92,63 @@ export default function OnboardingRolesStep({
     return "";
   };
 
-  const handleNext = () => {
+  // POST all roles (and members) on Next
+  const handleNext = async () => {
     const err = validate();
     if (err) {
       setError(err);
       return;
     }
     setError("");
-    onNext();
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const newRoles = [];
+      // 1. Create/Update roles
+      for (const role of roles) {
+        let roleId = role._id;
+        if (!roleId) {
+          // Create new role
+          const res = await axios.post(
+            `${API_BASE}/api/role`,
+            { name: role.name, description: "" },
+            {
+              headers: { Authorization: `Bearer ${token}` },
+              withCredentials: true,
+            }
+          );
+          roleId = res.data._id;
+        }
+        newRoles.push({ ...role, _id: roleId });
+      }
+
+      // 2. Create members for each role (optional: skip if already created)
+      for (const role of newRoles) {
+        for (const emp of role.employees) {
+          if (!emp._id) {
+            await axios.post(
+              `${API_BASE}/api/member`,
+              { name: emp.name, email: emp.email, roles: [role._id] },
+              {
+                headers: { Authorization: `Bearer ${token}` },
+                withCredentials: true,
+              }
+            );
+          }
+        }
+      }
+
+      setRoles(newRoles);
+      setLoading(false);
+      onNext();
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to save roles/members"
+      );
+      setLoading(false);
+    }
   };
 
   return (
@@ -89,7 +162,7 @@ export default function OnboardingRolesStep({
       <div className="space-y-8">
         {roles.map((role, idx) => (
           <div
-            key={idx}
+            key={role._id || idx}
             className="bg-[#efeee8] rounded-xl p-4 sm:p-5 shadow-sm"
           >
             <div className="flex flex-col sm:flex-row sm:items-center mb-3 gap-2">
@@ -100,6 +173,7 @@ export default function OnboardingRolesStep({
                 onChange={(e) => handleRoleChange(idx, e.target.value)}
                 placeholder="Role name (e.g. Designer)"
                 autoComplete="off"
+                disabled={loading}
               />
               {roles.length > 1 && (
                 <button
@@ -107,6 +181,7 @@ export default function OnboardingRolesStep({
                   onClick={() => removeRole(idx)}
                   title="Remove role"
                   type="button"
+                  disabled={loading}
                 >
                   &times;
                 </button>
@@ -136,6 +211,7 @@ export default function OnboardingRolesStep({
                       }
                       placeholder="Full name"
                       autoComplete="off"
+                      disabled={loading}
                     />
                     <input
                       type="email"
@@ -151,6 +227,7 @@ export default function OnboardingRolesStep({
                       }
                       placeholder="Email"
                       autoComplete="off"
+                      disabled={loading}
                     />
                     {role.employees.length > 1 && (
                       <button
@@ -158,6 +235,7 @@ export default function OnboardingRolesStep({
                         onClick={() => removeEmployee(idx, empIdx)}
                         title="Remove member"
                         type="button"
+                        disabled={loading}
                       >
                         &times;
                       </button>
@@ -169,6 +247,7 @@ export default function OnboardingRolesStep({
                 className="mt-3 text-green-700 font-medium underline hover:text-green-900"
                 onClick={() => addEmployee(idx)}
                 type="button"
+                disabled={loading}
               >
                 + Add Member
               </button>
@@ -180,24 +259,26 @@ export default function OnboardingRolesStep({
         className="mt-8 text-green-700 font-medium underline hover:text-green-900"
         onClick={addRole}
         type="button"
+        disabled={loading}
       >
         + Add Role
       </button>
       {error && <div className="text-red-600 text-sm mt-4">{error}</div>}
       <div className="flex flex-col sm:flex-row justify-between mt-10 gap-2">
         <button
-          className="bg-cyan-100 text-cyan-900 px-6 py-2 rounded-xl font-medium font-sans hover:bg-cyan-200 transition"
-          onClick={onBack}
-          type="button"
+          className="text-sm underline text-green-600 font-medium font-sans hover:text-orange-800 transition"
+          onClick={onSkip}
+          disabled={loading}
         >
-          Back
+          Skip Onboarding
         </button>
         <button
           className="bg-orange-800 text-white px-8 py-2 rounded-xl font-semibold font-sans hover:bg-green-600 transition"
           onClick={handleNext}
           type="button"
+          disabled={loading}
         >
-          Next
+          {loading ? "Saving..." : "Next"}
         </button>
       </div>
     </div>

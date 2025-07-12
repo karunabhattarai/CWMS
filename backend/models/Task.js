@@ -9,7 +9,7 @@ const taskSchema = new mongoose.Schema({
   taskTemplate: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'TaskTemplate',
-    required: true
+    required: false // optional since can be made aafai pani by the manager
   },
   name: {
     type: String,

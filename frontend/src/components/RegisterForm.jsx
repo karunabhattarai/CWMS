@@ -27,7 +27,7 @@ export default function RegisterForm() {
     }
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:5000/api/user/register", {
+      const res = await axios.post("http://localhost:5000/api/user/register/superadmin", {
         name,
         email,
         password,

@@ -1,5 +1,5 @@
 export default function OnboardingStepper({ step }) {
-  const steps = ["Organization", "Team", "Project Template", "Summary"];
+  const steps = ["Team", "Project Template", "Summary"];
   return (
     <div className="w-full flex justify-center mb-8">
       <div className="flex w-full max-w-2xl overflow-x-auto px-2">

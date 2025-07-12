@@ -14,7 +14,7 @@ const subtaskSchema = new mongoose.Schema({
   subtaskTemplate: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'SubtaskTemplate',
-    required: true
+    required: false // optional since can be made aafai pani by the manager
   },
   assignedMember: {
     type: mongoose.Schema.Types.ObjectId,
