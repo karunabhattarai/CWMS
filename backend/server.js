@@ -11,6 +11,9 @@ import memberRoutes from "./routes/memberRoutes.js";
 import companyRoutes from "./routes/companyRoutes.js";
 import subtaskTemplateRoutes from './routes/subtaskTemplateRoutes.js';
 import taskTemplateRoutes from './routes/taskTemplateRoutes.js';
+import taskRoutes from './routes/taskRoutes.js';
+import subtaskRoutes from './routes/subtaskRoutes.js';
+
 
 
 import cors from "cors";
@@ -40,6 +43,8 @@ app.use('/api/role', roleRoutes);
 app.use('/api/member', memberRoutes);
 app.use('/api/subtask-template', subtaskTemplateRoutes);
 app.use('/api/task-template', taskTemplateRoutes);
+app.use('/api/task', taskRoutes);
+app.use('/api/subtask', subtaskRoutes);
 
 
 const PORT = process.env.PORT || 5000;
