@@ -12,6 +12,7 @@ import ProjectsPage from "./pages/ProjectsPage";
 import CreateProjectPage from "./pages/CreateProject";
 import RolesPage from "./pages/RolesPage";
 import MembersPage from "./pages/MembersPage";
+import RegisterCompanyPage from "./pages/RegisterCompanyPage";
 
 // Dummy pages for sidebar routes
 const ReportsPage = () => <div className="p-8">Reports Page</div>;
@@ -34,6 +35,7 @@ function App() {
         />
         <Route path="/login" element={<AuthPage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
+        <Route path="/company-registration" element={<RegisterCompanyPage />} />
 
         {/* Dashboard and sidebar routes */}
         <Route

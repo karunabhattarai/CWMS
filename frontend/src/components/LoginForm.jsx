@@ -1,12 +1,12 @@
 import { useState } from "react";
 import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  // Optionally, add a success state or redirect logic
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -17,10 +17,18 @@ export default function LoginForm() {
         email,
         password,
       });
-      // Save token/user info to localStorage or context
-      localStorage.setItem("token", res.data.token);
-      // Optionally redirect or reload
-      window.location.href = "/dashboard";
+      const token = res.data.token;
+      localStorage.setItem("token", token);
+
+      // Decode the JWT to get user info
+      const user = jwtDecode(token);
+
+      // Redirect logic
+      if (user.role === "superadmin" && !user.company) {
+        window.location.href = "/company-registration";
+      } else {
+        window.location.href = "/dashboard";
+      }
     } catch (err) {
       setError(
         err.response?.data?.message ||
