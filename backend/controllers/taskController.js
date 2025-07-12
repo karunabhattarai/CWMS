@@ -1,67 +1,207 @@
-const Task = require('../models/taskModel');
+// controllers/taskController.js
 
-// Get all tasks
-exports.getAllTasks = async (req, res) => {
-    try {
-        const tasks = await Task.find();
-        res.json(tasks);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
+import Task from '../models/Task.js';
+import TaskTemplate from '../models/TaskTemplate.js';
+import Subtask from '../models/Subtask.js';
+import SubtaskTemplate from '../models/SubtaskTemplate.js';
+
+
+export const createTask = async (req, res) => {
+  try {
+    const { taskTemplate, name, deadline, subtasks = [] } = req.body;
+    const company = req.user.company;
+
+    if (!company) {
+      return res.status(400).json({ message: 'User has no company assigned' });
     }
-};
 
-// Get a single task by ID
-exports.getTaskById = async (req, res) => {
-    try {
-        const task = await Task.findById(req.params.id);
-        if (!task) return res.status(404).json({ message: 'Task not found' });
-        res.json(task);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-};
-
-// Create a new task
-exports.createTask = async (req, res) => {
     const task = new Task({
-        title: req.body.title,
-        description: req.body.description,
-        status: req.body.status
+      company,
+      taskTemplate: taskTemplate || null,
+      name,
+      deadline
     });
-    try {
-        const newTask = await task.save();
-        res.status(201).json(newTask);
-    } catch (err) {
-        res.status(400).json({ message: err.message });
+    await task.save();
+
+    let createdSubtasks = [];
+
+    // If taskTemplate is provided, populate from its subtasks
+    if (taskTemplate) {
+      const template = await TaskTemplate.findOne({ _id: taskTemplate, company }).populate('subtasks');
+      if (!template) return res.status(404).json({ message: 'Task Template not found for this company' });
+
+      createdSubtasks = await Promise.all(
+        template.subtasks.map(async (subtaskTemplateId) => {
+          const subtask = new Subtask({
+            task: task._id,
+            subtaskTemplate: subtaskTemplateId
+          });
+          await subtask.save();
+          return subtask._id;
+        })
+      );
+    } else {
+      // Manually provided subtasks: either via template or raw
+      createdSubtasks = await Promise.all(
+        subtasks.map(async (sub) => {
+          if (sub.subtaskTemplate) {
+            const subtask = new Subtask({
+              task: task._id,
+              subtaskTemplate: sub.subtaskTemplate
+            });
+            await subtask.save();
+            return subtask._id;
+          } else if (sub.name && sub.role && sub.estimatedDurationDays) {
+            const subtask = new Subtask({
+              task: task._id,
+              name: sub.name,
+              role: sub.role,
+              description: sub.description || '',
+              estimatedDurationDays: sub.estimatedDurationDays
+            });
+            await subtask.save();
+            return subtask._id;
+          } else {
+            throw new Error('Invalid subtask format: must provide either subtaskTemplate or raw fields');
+          }
+        })
+      );
     }
+
+    task.subtasks = createdSubtasks;
+    await task.save();
+
+    res.status(201).json(task);
+  } catch (error) {
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
 };
 
-// Update a task
-exports.updateTask = async (req, res) => {
-    try {
-        const task = await Task.findById(req.params.id);
-        if (!task) return res.status(404).json({ message: 'Task not found' });
 
-        if (req.body.title !== undefined) task.title = req.body.title;
-        if (req.body.description !== undefined) task.description = req.body.description;
-        if (req.body.status !== undefined) task.status = req.body.status;
+export const getAllTasks = async (req, res) => {
+  try {
+    const tasks = await Task.find({ company: req.user.company })
+      .populate('taskTemplate')
+      .populate({
+        path: 'subtasks',
+        populate: [
+          { path: 'subtaskTemplate', select: 'name' },
+          { path: 'assignedMember', select: 'name' }
+        ]
+      });
 
-        const updatedTask = await task.save();
-        res.json(updatedTask);
-    } catch (err) {
-        res.status(400).json({ message: err.message });
-    }
+    res.status(200).json(tasks);
+  } catch (error) {
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
 };
 
-// Delete a task
-exports.deleteTask = async (req, res) => {
-    try {
-        const task = await Task.findById(req.params.id);
-        if (!task) return res.status(404).json({ message: 'Task not found' });
+// testing
+// export const getAllTasks = async (req, res) => {
+//   try {
+//     // Just fetch subtasks directly for that task ID to verify
+//     const subs = await Subtask.find({ task: '68727c4674068c0b2a3d5802' });
+//     console.log(subs);
 
-        await task.remove();
-        res.json({ message: 'Task deleted' });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
+//     const tasks = await Task.find({ company: req.user.company })
+//       .populate('taskTemplate')
+//       .populate({
+//         path: 'subtasks',
+//         populate: {
+//           path: 'subtaskTemplate',
+//           select: 'name'
+//         }
+//       })
+//       .populate({
+//         path: 'subtasks',
+//         populate: {
+//           path: 'assignedMember',
+//           select: 'name'
+//         }
+//       });
+
+//     res.status(200).json(tasks);
+//   } catch (error) {
+//     res.status(500).json({ message: 'Internal server error', error: error.message });
+//   }
+// };
+//testing
+
+export const updateTask = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, deadline, subtasks } = req.body;
+
+    const task = await Task.findOne({ _id: id, company: req.user.company });
+    if (!task) return res.status(404).json({ message: 'Task not found' });
+
+    // Update basic fields
+    task.name = name || task.name;
+    task.deadline = deadline || task.deadline;
+
+    if (subtasks && Array.isArray(subtasks)) {
+      const newSubtaskIds = [];
+
+      for (const s of subtasks) {
+        if (s.subtaskTemplate) {
+          // Use existing template
+          const newSubtask = new Subtask({
+            task: task._id,
+            subtaskTemplate: s.subtaskTemplate
+          });
+          await newSubtask.save();
+          newSubtaskIds.push(newSubtask._id);
+        } else if (s.role && s.name && s.estimatedDurationDays) {
+          // Direct raw subtask (no template)
+          const newSubtask = new Subtask({
+            task: task._id,
+            name: s.name,
+            role: s.role,
+            description: s.description || '',
+            estimatedDurationDays: s.estimatedDurationDays
+          });
+          await newSubtask.save();
+          newSubtaskIds.push(newSubtask._id);
+        } else {
+          return res.status(400).json({
+
+            message: 'Each subtask must have either "subtaskTemplate" OR all of "role", "name", "estimatedDurationDays"'
+          });
+        }
+      }
+
+      // Replace old subtasks
+      await Subtask.deleteMany({
+        task: task._id,
+        _id: { $nin: newSubtaskIds}
+      });
+      task.subtasks = newSubtaskIds;
     }
+
+    await task.save();
+    res.status(200).json(task);
+  } catch (error) {
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+};
+
+
+
+export const deleteTask = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const task = await Task.findOne({ _id: id, company: req.user.company });
+    if (!task) return res.status(404).json({ message: 'Task not found' });
+
+    // Delete all subtasks
+    await Subtask.deleteMany({ task: task._id });
+
+    // Delete the task
+    await task.deleteOne();
+
+    res.status(200).json({ message: 'Task and related subtasks deleted' });
+  } catch (error) {
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
 };
