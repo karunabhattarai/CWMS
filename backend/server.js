@@ -9,6 +9,9 @@ import userRoutes from "./routes/userRoutes.js";
 import roleRoutes from "./routes/roleRoutes.js";
 import memberRoutes from "./routes/memberRoutes.js";
 import companyRoutes from "./routes/companyRoutes.js";
+import subtaskTemplateRoutes from './routes/subtaskTemplateRoutes.js';
+import taskTemplateRoutes from './routes/taskTemplateRoutes.js';
+
 
 import cors from "cors";
 dotenv.config();
@@ -31,10 +34,14 @@ app.use(
 app.use(express.json()); // Middleware to parse JSON bodies
 
 // Routes
-app.use("/api/user", userRoutes);
-app.use("/api/company", companyRoutes);
-app.use("/api/role", roleRoutes);
-app.use("/api/member", memberRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/company', companyRoutes);
+app.use('/api/role', roleRoutes);
+app.use('/api/member', memberRoutes);
+app.use('/api/subtask-template', subtaskTemplateRoutes);
+app.use('/api/task-template', taskTemplateRoutes);
+
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
