@@ -1,0 +1,478 @@
+export const companies = [
+  {
+    _id: "ytco1",
+    name: "TechVision Studios",
+    description:
+      "Premier tech review channel with 500K+ subscribers specializing in gadget reviews and tutorials",
+    createdBy: "user1",
+  },
+];
+
+export const users = [
+  {
+    _id: "user1",
+    name: "Alex Johnson",
+    email: "alex.johnson@techvision.com",
+    password: "hashedPassword1",
+    role: "superadmin",
+    isVerified: true,
+    verificationToken: "token-alex",
+  },
+  {
+    _id: "user2",
+    name: "Mira Patel",
+    email: "mira.patel@techvision.com",
+    password: "hashedPassword2",
+    role: "manager",
+    company: "ytco1",
+    isVerified: true,
+    verificationToken: "token-mira",
+  },
+];
+
+export const roles = [
+  {
+    _id: "role1",
+    name: "Content Strategist",
+    description: "Develops video concepts and content calendar",
+    company: "ytco1",
+  },
+  {
+    _id: "role2",
+    name: "Video Producer/Editor",
+    description: "Handles filming and post-production",
+    company: "ytco1",
+  },
+  {
+    _id: "role3",
+    name: "Graphic Designer",
+    description: "Creates thumbnails and channel artwork",
+    company: "ytco1",
+  },
+  {
+    _id: "role4",
+    name: "Social Media Manager",
+    description: "Manages community engagement and promotions",
+    company: "ytco1",
+  },
+];
+
+export const members = [
+  {
+    _id: "mem1",
+    name: "Samuel Carter",
+    email: "sam.carter@techvision.com",
+    company: "ytco1",
+    roles: ["role1"],
+  },
+  {
+    _id: "mem2",
+    name: "Jamie Lee",
+    email: "jamie.lee@techvision.com",
+    company: "ytco1",
+    roles: ["role2"],
+  },
+  {
+    _id: "mem3",
+    name: "Taylor Kim",
+    email: "taylor.kim@techvision.com",
+    company: "ytco1",
+    roles: ["role3"],
+  },
+  {
+    _id: "mem4",
+    name: "Jordan Smith",
+    email: "jordan.smith@techvision.com",
+    company: "ytco1",
+    roles: ["role4"],
+  },
+  // Additional members for better dropdown demonstration:
+  {
+    _id: "mem5",
+    name: "Priya Singh",
+    email: "priya.singh@techvision.com",
+    company: "ytco1",
+    roles: ["role1"], // Content Strategist
+  },
+  {
+    _id: "mem6",
+    name: "Carlos Alvarez",
+    email: "carlos.alvarez@techvision.com",
+    company: "ytco1",
+    roles: ["role2"], // Video Producer/Editor
+  },
+  {
+    _id: "mem7",
+    name: "Emily Chen",
+    email: "emily.chen@techvision.com",
+    company: "ytco1",
+    roles: ["role3"], // Graphic Designer
+  },
+  {
+    _id: "mem8",
+    name: "Fatima Zahra",
+    email: "fatima.zahra@techvision.com",
+    company: "ytco1",
+    roles: ["role4"], // Social Media Manager
+  },
+  {
+    _id: "mem9",
+    name: "Brian O'Connor",
+    email: "brian.oconnor@techvision.com",
+    company: "ytco1",
+    roles: ["role1", "role2"], // Multi-role
+  },
+  {
+    _id: "mem10",
+    name: "Sofia Rossi",
+    email: "sofia.rossi@techvision.com",
+    company: "ytco1",
+    roles: ["role3", "role4"], // Multi-role
+  },
+];
+
+export const subtaskTemplates = [
+  {
+    _id: "stt1",
+    role: "role1",
+    name: "Research & Script Outline",
+    description: "Conduct product research and create script structure",
+    estimatedDurationDays: 2,
+  },
+  {
+    _id: "stt2",
+    role: "role1",
+    name: "Final Script Draft",
+    description: "Polish script with key talking points",
+    estimatedDurationDays: 1,
+  },
+  {
+    _id: "stt3",
+    role: "role2",
+    name: "B-roll Shooting",
+    description: "Film product close-ups and demo shots",
+    estimatedDurationDays: 2,
+  },
+  {
+    _id: "stt4",
+    role: "role2",
+    name: "Main Edit",
+    description: "Edit primary footage with transitions",
+    estimatedDurationDays: 3,
+  },
+  {
+    _id: "stt5",
+    role: "role3",
+    name: "Thumbnail Design",
+    description: "Create 3 thumbnail options for A/B testing",
+    estimatedDurationDays: 1,
+  },
+  {
+    _id: "stt6",
+    role: "role4",
+    name: "SEO Optimization",
+    description: "Optimize title, description, and tags",
+    estimatedDurationDays: 1,
+  },
+  {
+    _id: "stt7",
+    role: "role4",
+    name: "Social Media Snippets",
+    description: "Create shorts/reels from main video",
+    estimatedDurationDays: 1,
+  },
+];
+
+export const taskTemplates = [
+  {
+    _id: "tt1",
+    company: "ytco1",
+    name: "Standard Video Production",
+    description: "End-to-end production for tech review videos",
+    subtasks: ["stt1", "stt2", "stt3", "stt4", "stt5", "stt6", "stt7"],
+  },
+  {
+    _id: "tt2",
+    company: "ytco1",
+    name: "Channel Growth Campaign",
+    description: "Monthly strategy for subscriber growth",
+    subtasks: ["stt1", "stt6", "stt7"],
+  },
+];
+
+export const tasks = [
+  {
+    _id: "task1",
+    company: "ytco1",
+    taskTemplate: "tt1",
+    name: "iPhone 15 Pro Review - Is It Worth Upgrading?",
+    deadline: "2023-11-10T00:00:00Z",
+    startDate: "2023-10-25T00:00:00Z",
+    status: "inprogress",
+    priority: "high",
+    subtasks: ["sub1", "sub2", "sub3", "sub4", "sub5", "sub6", "sub7"],
+  },
+  {
+    _id: "task2",
+    company: "ytco1",
+    taskTemplate: "tt1",
+    name: "M3 MacBook Pro Deep Dive Review",
+    deadline: "2023-11-24T00:00:00Z",
+    startDate: "2023-11-06T00:00:00Z",
+    status: "scheduled",
+    priority: "moderate",
+    subtasks: ["sub8", "sub9", "sub10", "sub11", "sub12", "sub13", "sub14"],
+  },
+  {
+    _id: "task3",
+    company: "ytco1",
+    taskTemplate: "tt2",
+    name: "November Growth Push - Smartphone Reviews",
+    deadline: "2023-11-30T00:00:00Z",
+    startDate: "2023-11-01T00:00:00Z",
+    status: "delayed",
+    priority: "urgent",
+    subtasks: ["sub15", "sub16", "sub17"],
+  },
+  {
+    _id: "task4",
+    company: "ytco1",
+    taskTemplate: "tt1",
+    name: "Nothing Phone 3 Hands-on Review",
+    deadline: "2025-06-17T00:00:00Z",
+    startDate: "2025-06-13T00:00:00Z",
+    status: "inprogress",
+    priority: "high",
+    subtasks: ["sub18", "sub19", "sub20", "sub21", "sub22", "sub23", "sub24"],
+  },
+  {
+    _id: "task5",
+    company: "ytco1",
+    taskTemplate: "tt1",
+    name: "Pixel 9 Pro Unboxing & First Impressions",
+    deadline: "2025-06-09T00:00:00Z",
+    startDate: "2025-05-30T00:00:00Z",
+    status: "completed",
+    priority: "moderate",
+    subtasks: ["sub25", "sub26", "sub27", "sub28", "sub29", "sub30", "sub31"],
+  },
+  {
+    _id: "task6",
+    company: "ytco1",
+    taskTemplate: "tt2",
+    name: "June Growth Campaign: Budget Phones",
+    deadline: "2025-06-16T00:00:00Z",
+    startDate: "2025-06-14T00:00:00Z",
+    status: "scheduled",
+    priority: "urgent",
+    subtasks: ["sub32", "sub33", "sub34"],
+  },
+];
+
+export const subtasks = [
+  {
+    _id: "sub1",
+    task: "task1",
+    subtaskTemplate: "stt1",
+    assignedMember: "mem1",
+    status: "completed",
+    comment: "Completed competitor analysis",
+    startedAt: "2023-10-25T09:00:00Z",
+    completedAt: "2023-10-26T18:00:00Z",
+  },
+  {
+    _id: "sub2",
+    task: "task1",
+    subtaskTemplate: "stt2",
+    assignedMember: "mem1",
+    status: "completed",
+    comment: "Script approved by legal team",
+    startedAt: "2023-10-27T10:00:00Z",
+    completedAt: "2023-10-27T16:00:00Z",
+  },
+  {
+    _id: "sub3",
+    task: "task1",
+    subtaskTemplate: "stt3",
+    assignedMember: "mem2",
+    status: "inprogress",
+    comment: "Waiting for final product unit",
+    startedAt: "2023-10-30T09:00:00Z",
+  },
+  {
+    _id: "sub4",
+    task: "task1",
+    subtaskTemplate: "stt4",
+    assignedMember: "mem2",
+    status: "scheduled",
+  },
+  {
+    _id: "sub5",
+    task: "task1",
+    subtaskTemplate: "stt5",
+    assignedMember: "mem3",
+    status: "scheduled",
+  },
+  // Task 2: MacBook Pro Review
+  {
+    _id: "sub8",
+    task: "task2",
+    subtaskTemplate: "stt1",
+    assignedMember: "mem1",
+    status: "scheduled",
+  },
+  // Task 3: Growth Campaign
+  {
+    _id: "sub15",
+    task: "task3",
+    subtaskTemplate: "stt1",
+    assignedMember: "mem1",
+    status: "delayed",
+    comment: "Waiting for Q4 marketing budget approval",
+    startedAt: "2023-11-01T09:00:00Z",
+  },
+  {
+    _id: "sub16",
+    task: "task3",
+    subtaskTemplate: "stt6",
+    assignedMember: "mem4",
+    status: "scheduled",
+  },
+  // task4 subtasks - inprogress
+  {
+    _id: "sub18",
+    task: "task4",
+    subtaskTemplate: "stt1",
+    assignedMember: "mem1",
+    status: "completed",
+    startedAt: "2025-06-12T09:00:00Z",
+    completedAt: "2025-06-13T12:00:00Z",
+  },
+  {
+    _id: "sub19",
+    task: "task4",
+    subtaskTemplate: "stt2",
+    assignedMember: "mem1",
+    status: "completed",
+    startedAt: "2025-06-13T13:00:00Z",
+    completedAt: "2025-06-14T10:00:00Z",
+  },
+  {
+    _id: "sub20",
+    task: "task4",
+    subtaskTemplate: "stt3",
+    assignedMember: "mem2",
+    status: "inprogress",
+    comment: "Shooting with new lighting setup",
+    startedAt: "2025-06-14T11:00:00Z",
+  },
+  {
+    _id: "sub21",
+    task: "task4",
+    subtaskTemplate: "stt4",
+    assignedMember: "mem2",
+    status: "scheduled",
+  },
+  {
+    _id: "sub22",
+    task: "task4",
+    subtaskTemplate: "stt5",
+    assignedMember: "mem3",
+    status: "scheduled",
+  },
+  {
+    _id: "sub23",
+    task: "task4",
+    subtaskTemplate: "stt6",
+    assignedMember: "mem4",
+    status: "scheduled",
+  },
+  {
+    _id: "sub24",
+    task: "task4",
+    subtaskTemplate: "stt7",
+    assignedMember: "mem4",
+    status: "scheduled",
+  },
+
+  // task5 subtasks - completed
+  {
+    _id: "sub25",
+    task: "task5",
+    subtaskTemplate: "stt1",
+    assignedMember: "mem1",
+    status: "completed",
+    startedAt: "2025-05-30T09:00:00Z",
+    completedAt: "2025-05-31T15:00:00Z",
+  },
+  {
+    _id: "sub26",
+    task: "task5",
+    subtaskTemplate: "stt2",
+    assignedMember: "mem1",
+    status: "completed",
+    startedAt: "2025-06-01T09:00:00Z",
+    completedAt: "2025-06-01T12:00:00Z",
+  },
+  {
+    _id: "sub27",
+    task: "task5",
+    subtaskTemplate: "stt3",
+    assignedMember: "mem2",
+    status: "completed",
+    startedAt: "2025-06-02T10:00:00Z",
+    completedAt: "2025-06-03T17:00:00Z",
+  },
+  {
+    _id: "sub28",
+    task: "task5",
+    subtaskTemplate: "stt4",
+    assignedMember: "mem2",
+    status: "completed",
+    startedAt: "2025-06-03T18:00:00Z",
+    completedAt: "2025-06-05T16:00:00Z",
+  },
+  {
+    _id: "sub29",
+    task: "task5",
+    subtaskTemplate: "stt5",
+    assignedMember: "mem3",
+    status: "completed",
+    startedAt: "2025-06-05T09:00:00Z",
+    completedAt: "2025-06-05T14:00:00Z",
+  },
+  {
+    _id: "sub30",
+    task: "task5",
+    subtaskTemplate: "stt6",
+    assignedMember: "mem4",
+    status: "completed",
+    startedAt: "2025-06-06T09:00:00Z",
+    completedAt: "2025-06-06T13:00:00Z",
+  },
+  {
+    _id: "sub31",
+    task: "task5",
+    subtaskTemplate: "stt7",
+    assignedMember: "mem4",
+    status: "completed",
+    startedAt: "2025-06-07T10:00:00Z",
+    completedAt: "2025-06-08T10:00:00Z",
+  },
+
+  // task6 subtasks - scheduled
+  {
+    _id: "sub32",
+    task: "task6",
+    subtaskTemplate: "stt1",
+    assignedMember: "mem1",
+    status: "scheduled",
+  },
+  {
+    _id: "sub33",
+    task: "task6",
+    subtaskTemplate: "stt6",
+    assignedMember: "mem4",
+    status: "scheduled",
+  },
+];
