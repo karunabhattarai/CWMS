@@ -4,7 +4,7 @@ import Footer from "../components/Footer";
 
 export default function DashboardLayout({ children }) {
   return (
-    <div className="min-h-screen bg-cyan-50">
+    <div className="min-h-screen bg-[#efeee8]">
       <Sidebar />
       <div className="lg:ml-64 flex flex-col min-h-screen">
         <Navbar />

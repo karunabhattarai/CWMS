@@ -23,11 +23,11 @@ router.delete('/:id',authMiddleware,allowRoles('superadmin'), deleteUser); // On
 
 
 router.post(
-    '/createManager',
-    authMiddleware,
-    // allowRoles('superadmin'), // Only allow superadmin
-    allowRoles('superadmin', 'manager'), // Allow superadmin and manager
-    registerManager
-)
+  "/createManager",
+  authMiddleware,
+  // allowRoles('superadmin'), // Only allow superadmin
+  allowRoles("superadmin", "manager"), // Allow superadmin and manager
+  registerManager
+);
 
 export default router;

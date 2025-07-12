@@ -88,7 +88,7 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-cyan-50 px-4 py-8">
+    <div className="min-h-screen bg-[#efeee8] px-4 py-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
           <h1 className="text-2xl font-bold font-serif text-green-900">

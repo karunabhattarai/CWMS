@@ -1,12 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Navbar() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // Check login state from localStorage
+  const [isLoggedIn, setIsLoggedIn] = useState(
+    () => !!localStorage.getItem("token")
+  );
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
+  useEffect(() => {
+    // Listen for login/logout events across tabs
+    const syncLogin = () => setIsLoggedIn(!!localStorage.getItem("token"));
+    window.addEventListener("storage", syncLogin);
+    return () => window.removeEventListener("storage", syncLogin);
+  }, []);
+
   const handleLogout = () => {
+    localStorage.removeItem("token");
     setIsLoggedIn(false);
     setShowMobileMenu(false);
+    window.location.href = "/"; // Redirect to home after logout
   };
 
   const menuItems = (
@@ -30,9 +42,9 @@ export default function Navbar() {
         <li>
           <a
             href="/login"
-            className="px-4 py-2 rounded bg-rose-700 text-white font-medium transition-colors"
+            className="px-4 py-2 rounded bg-green-700 text-white font-medium transition-colors"
           >
-            Sign Up
+            Sign In
           </a>
         </li>
       ) : (
@@ -48,18 +60,10 @@ export default function Navbar() {
           <li>
             <button
               onClick={handleLogout}
-              className="px-4 py-2 rounded bg-green-600 text-white font-medium transition-colors"
+              className="px-4 py-2 rounded bg-rose-700 text-white font-medium transition-colors"
             >
               Logout
             </button>
-          </li>
-          <li>
-            <a
-              href="/profile"
-              className="hover:text-green-600 flex items-center transition-colors"
-            >
-              <span className="mr-2">Profile</span>
-            </a>
           </li>
         </>
       )}
@@ -68,7 +72,7 @@ export default function Navbar() {
 
   return (
     <nav className="flex items-center justify-between px-6 md:px-12 py-4 bg-white shadow relative">
-      <div className="text-2xl font-bold text-green-900 lg:text-white">
+      <div className="text-2xl font-bold text-green-900">
         <a href="/">CWMS</a>
       </div>
       {/* Desktop Menu */}

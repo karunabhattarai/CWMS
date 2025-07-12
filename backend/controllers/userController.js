@@ -82,22 +82,22 @@ export const registerManager = async(req,res)=>{
         //hash the password
         const hashedPassword = await bcrypt.hash(password,10);
 
-        //create token for verification
-        const token = crypto.randomBytes(32).toString('hex'); // Generate a random token
-        //create manager
-        const newManager = new User({
-            name,
-            email,
-            // password: hashedPassword, // not necessary to hash again, will be hashed in models
-            password, // password will be hashed in the User model pre-save hook
-            company, 
-            role: 'manager',
-            isVerified: false, // default value
-            verificationToken: token 
-            // send email Please verify your account: https://yourapp.com/verify?token=abc123
-        });
+    //create token for verification
+    const token = crypto.randomBytes(32).toString("hex"); // Generate a random token
+    //create manager
+    const newManager = new User({
+      name,
+      email,
+      // password: hashedPassword, // not necessary to hash again, will be hashed in models
+      password, // password will be hashed in the User model pre-save hook
+      company,
+      role: "manager",
+      isVerified: false, // default value
+      verificationToken: token,
+      // send email Please verify your account: https://yourapp.com/verify?token=abc123
+    });
 
-        await newManager.save();
+    await newManager.save();
 
         // Send verification email
         const verifyLink = `${process.env.BACKEND_URL}/api/user/verify-email?token=${token}`;
@@ -115,7 +115,6 @@ export const registerManager = async(req,res)=>{
         res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 };
-
 
 //verify above users with email
 export const verifyUserEmail = async(req,res) => { //issue is? 
@@ -143,6 +142,7 @@ export const verifyUserEmail = async(req,res) => { //issue is?
 
 
 // login user | manager or superadmin
+
 export const loginUser = async (req,res) => {
     try{
         const {email, password} = req.body;
@@ -159,26 +159,27 @@ export const loginUser = async (req,res) => {
             return res.status(403).json({ message: 'User not verified. Please check your email for verification link.' });
         }
 
-        // Check password
-        const isMatch = await bcrypt.compare(password, user.password);
+    // Check password
+    const isMatch = await bcrypt.compare(password, user.password);
 
-        if (!isMatch) {
-            return res.status(401).json({ message: 'Invalid credentials' });
-        }
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
 
-        const token = jwt.sign(
-            { id: user._id, company: user.company?._id, role: user.role },
-            process.env.JWT_SECRET,
-            { expiresIn: '1h' }
-        );
-        // res.status(200).json({token, user}); // unsaafe bhayo yo alli
-        const { password: _, ...userData } = user._doc; // Exclude password from response
-        res.status(200).json({ token, user: userData });
-    }catch(err) {
-        res.status(500).json({ message: 'Internal server error', error: err.message});
-    }   
+    const token = jwt.sign(
+      { id: user._id, company: user.company?._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+    // res.status(200).json({token, user}); // unsaafe bhayo yo alli
+    const { password: _, ...userData } = user._doc; // Exclude password from response
+    res.status(200).json({ token, user: userData });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: err.message });
+  }
 };
-
 
 //other user functions
 

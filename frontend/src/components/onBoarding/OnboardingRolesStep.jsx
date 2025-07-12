@@ -88,7 +88,10 @@ export default function OnboardingRolesStep({
       </p>
       <div className="space-y-8">
         {roles.map((role, idx) => (
-          <div key={idx} className="bg-cyan-50 rounded-xl p-4 sm:p-5 shadow-sm">
+          <div
+            key={idx}
+            className="bg-[#efeee8] rounded-xl p-4 sm:p-5 shadow-sm"
+          >
             <div className="flex flex-col sm:flex-row sm:items-center mb-3 gap-2">
               <input
                 type="text"

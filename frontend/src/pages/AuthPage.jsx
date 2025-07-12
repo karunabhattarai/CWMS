@@ -16,7 +16,7 @@ export default function AuthPage() {
     : "animate-slide-in-right";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-cyan-50 px-2">
+    <div className="min-h-screen flex items-center justify-center bg-[#efeee8] px-2">
       <div className={containerFlex}>
         {/* Info Panel */}
         <div className="hidden md:flex flex-col items-center justify-center bg-cyan-100 w-1/2 p-8 transition-all duration-500 ease-in-out">

@@ -88,7 +88,7 @@ export default function OnboardingProjectStep({
           {project.subparts.map((sub, idx) => (
             <div
               key={idx}
-              className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-cyan-50 rounded-xl p-3"
+              className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-[#efeee8] rounded-xl p-3"
             >
               <input
                 type="text"

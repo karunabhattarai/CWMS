@@ -1,17 +1,18 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const companySchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true
-  },
+const companySchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
 
-  description: {
-    type: String,
-    default: ''
-  },
+    description: {
+      type: String,
+      default: "",
+    },
 
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -21,4 +22,4 @@ const companySchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-export default mongoose.model('Company', companySchema);
+export default mongoose.model("Company", companySchema);
