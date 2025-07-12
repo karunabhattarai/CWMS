@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 import RoleList from "../components/roles/RoleList";
 import RoleAddModal from "../components/roles/RoleAddModal";
+import RoleEditModal from "../components/roles/RoleEditModal";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -10,17 +12,23 @@ export default function RolesPage() {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editRole, setEditRole] = useState(null);
 
-  // Fetch roles on mount
+  // Get user role from JWT
+  const token = localStorage.getItem("token");
+  let userRole = "";
+  if (token) {
+    try {
+      userRole = jwtDecode(token).role;
+    } catch (e) {}
+  }
+
   const fetchRoles = async () => {
     setLoading(true);
     setFetchError("");
     try {
-      const token = localStorage.getItem("token");
       const res = await axios.get(`${API_BASE}/api/role`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
       setRoles(res.data);
     } catch (err) {
@@ -42,6 +50,26 @@ export default function RolesPage() {
     setShowAddModal(false);
   };
 
+  const handleEditRole = (updatedRole) => {
+    setRoles((prev) =>
+      prev.map((r) => (r._id === updatedRole._id ? updatedRole : r))
+    );
+    setEditRole(null);
+  };
+
+  const handleDeleteRole = async (id) => {
+    try {
+      await axios.delete(`${API_BASE}/api/role/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setRoles((prev) => prev.filter((r) => r._id !== id));
+    } catch (err) {
+      alert(
+        err.response?.data?.message || err.message || "Failed to delete role"
+      );
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#efeee8] px-4 py-8">
       <div className="max-w-4xl mx-auto">
@@ -61,12 +89,24 @@ export default function RolesPage() {
         ) : fetchError ? (
           <div className="text-red-600">{fetchError}</div>
         ) : (
-          <RoleList roles={roles} />
+          <RoleList
+            roles={roles}
+            userRole={userRole}
+            onEdit={setEditRole}
+            onDelete={handleDeleteRole}
+          />
         )}
         {showAddModal && (
           <RoleAddModal
             onClose={() => setShowAddModal(false)}
             onRoleAdded={handleAddRole}
+          />
+        )}
+        {editRole && (
+          <RoleEditModal
+            role={editRole}
+            onClose={() => setEditRole(null)}
+            onRoleEdited={handleEditRole}
           />
         )}
       </div>
