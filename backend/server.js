@@ -1,14 +1,14 @@
 // This file sets up the connection to MongoDB using Mongoose.
 
 // so had the dotenv package to load environment variables from a .env file
-import * as dotenv from "dotenv";
-import mongoose from "mongoose";
-import express from "express";
-import authMiddleware from "./middleware/authMiddleware.js";
-
-import userRoutes from "./routes/userRoutes.js";
+import * as dotenv from 'dotenv';
+import mongoose from 'mongoose';
+import express from 'express';
+// Importing routes
+import userRoutes from './routes/userRoutes.js';
+import roleRoutes from './routes/roleRoutes.js';
+import memberRoutes from './routes/memberRoutes.js';
 import companyRoutes from "./routes/companyRoutes.js";
-// import userRoutes from './routes/user.js';
 
 import cors from "cors";
 dotenv.config();
@@ -31,9 +31,11 @@ app.use(
 );
 app.use(express.json()); // Middleware to parse JSON bodies
 
-app.use("/api/user", userRoutes);
-app.use("/api/company", companyRoutes);
-
+// Routes
+app.use('/api/user', userRoutes);
+app.use('/api/company', companyRoutes);
+app.use('/api/role', roleRoutes);
+app.use('/api/member', memberRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
