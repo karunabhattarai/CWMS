@@ -1,16 +1,40 @@
 import { useState, useEffect } from "react";
+import axios from "axios";
 import RoleList from "../components/roles/RoleList";
 import RoleAddModal from "../components/roles/RoleAddModal";
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
 export default function RolesPage() {
   const [roles, setRoles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
 
   // Fetch roles on mount
+  const fetchRoles = async () => {
+    setLoading(true);
+    setFetchError("");
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`${API_BASE}/api/role`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setRoles(res.data);
+    } catch (err) {
+      setFetchError(
+        err.response?.data?.message || err.message || "Failed to fetch roles"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    fetch("/api/roles", { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => setRoles(data));
+    fetchRoles();
+    // eslint-disable-next-line
   }, []);
 
   const handleAddRole = (newRole) => {
@@ -32,7 +56,13 @@ export default function RolesPage() {
             + Add Role
           </button>
         </div>
-        <RoleList roles={roles} />
+        {loading ? (
+          <div>Loading roles...</div>
+        ) : fetchError ? (
+          <div className="text-red-600">{fetchError}</div>
+        ) : (
+          <RoleList roles={roles} />
+        )}
         {showAddModal && (
           <RoleAddModal
             onClose={() => setShowAddModal(false)}

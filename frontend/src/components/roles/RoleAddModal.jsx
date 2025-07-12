@@ -1,30 +1,40 @@
 import { useState } from "react";
+import axios from "axios";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 export default function RoleAddModal({ onClose, onRoleAdded }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const API_BASE = import.meta.env.VITE_API_BASE_URL;
-  
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
       setError("Role name is required.");
       return;
     }
+    setLoading(true);
+    setError("");
     try {
-      const res = await fetch("/api/roles", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ name, description }),
-      });
-      if (!res.ok) throw new Error("Failed to add role");
-      const newRole = await res.json();
-      onRoleAdded(newRole);
+      const token = localStorage.getItem("token");
+      const res = await axios.post(
+        `${API_BASE}/api/role`,
+        { name, description },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      onRoleAdded(res.data);
     } catch (err) {
-      setError(err.message);
+      setError(
+        err.response?.data?.message || err.message || "Failed to add role"
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -40,12 +50,14 @@ export default function RoleAddModal({ onClose, onRoleAdded }) {
           placeholder="Role Name"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          disabled={loading}
         />
         <textarea
           className="w-full mb-4 p-2 border rounded"
           placeholder="Description (optional)"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          disabled={loading}
         />
         {error && <div className="text-red-600 mb-2">{error}</div>}
         <div className="flex justify-end gap-2">
@@ -53,14 +65,16 @@ export default function RoleAddModal({ onClose, onRoleAdded }) {
             type="button"
             onClick={onClose}
             className="px-4 py-2 bg-gray-200 rounded"
+            disabled={loading}
           >
             Cancel
           </button>
           <button
             type="submit"
             className="px-4 py-2 bg-green-700 text-white rounded"
+            disabled={loading}
           >
-            Add Role
+            {loading ? "Adding..." : "Add Role"}
           </button>
         </div>
       </form>

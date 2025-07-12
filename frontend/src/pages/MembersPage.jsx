@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import axios from "axios";
 import MemberList from "../components/members/MemberList";
 import MemberAddModal from "../components/members/MemberAddModal";
 
@@ -7,15 +8,41 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL;
 export default function MembersPage() {
   const [members, setMembers] = useState([]);
   const [roles, setRoles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/member`, { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => setMembers(data));
-    fetch(`${API_BASE}/api/roles`, { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => setRoles(data));
+    const fetchData = async () => {
+      setLoading(true);
+      setFetchError("");
+      try {
+        const token = localStorage.getItem("token");
+        const [membersRes, rolesRes] = await Promise.all([
+          axios.get(`${API_BASE}/api/member`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+          axios.get(`${API_BASE}/api/role`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+        ]);
+        setMembers(membersRes.data);
+        setRoles(rolesRes.data);
+      } catch (err) {
+        setFetchError(
+          err.response?.data?.message ||
+            err.message ||
+            "Failed to fetch members/roles"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
   }, []);
 
   const handleAddMember = (newMember) => {
@@ -37,7 +64,13 @@ export default function MembersPage() {
             + Add Member
           </button>
         </div>
-        <MemberList members={members} roles={roles} />
+        {loading ? (
+          <div>Loading members and roles...</div>
+        ) : fetchError ? (
+          <div className="text-red-600">{fetchError}</div>
+        ) : (
+          <MemberList members={members} roles={roles} />
+        )}
         {showAddModal && (
           <MemberAddModal
             onClose={() => setShowAddModal(false)}
