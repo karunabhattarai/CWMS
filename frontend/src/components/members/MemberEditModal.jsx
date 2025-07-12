@@ -1,0 +1,109 @@
+import { useState } from "react";
+import axios from "axios";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
+export default function MemberEditModal({
+  member,
+  roles,
+  onClose,
+  onMemberEdited,
+}) {
+  const [name, setName] = useState(member.name);
+  const [email, setEmail] = useState(member.email);
+  const [selectedRoles, setSelectedRoles] = useState(member.roles || []);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim()) {
+      setError("Name and email are required.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.put(
+        `${API_BASE}/api/member/${member._id}`,
+        { name, email, roles: selectedRoles },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      onMemberEdited(res.data);
+    } catch (err) {
+      setError(
+        err.response?.data?.message || err.message || "Failed to edit member"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
+      <form
+        className="bg-white rounded-xl p-8 shadow-lg w-full max-w-md"
+        onSubmit={handleSubmit}
+      >
+        <h2 className="text-xl font-bold mb-4">Edit Member</h2>
+        <input
+          className="w-full mb-4 p-2 border rounded"
+          placeholder="Full Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          disabled={loading}
+        />
+        <input
+          className="w-full mb-4 p-2 border rounded"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          disabled={loading}
+        />
+        <div className="mb-4">
+          <label className="block mb-2">Roles</label>
+          <select
+            className="w-full p-2 border rounded"
+            multiple
+            value={selectedRoles}
+            onChange={(e) =>
+              setSelectedRoles(
+                Array.from(e.target.selectedOptions, (option) => option.value)
+              )
+            }
+            disabled={loading}
+          >
+            {roles.map((role) => (
+              <option key={role._id} value={role._id}>
+                {role.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        {error && <div className="text-red-600 mb-2">{error}</div>}
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-200 rounded"
+            disabled={loading}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 bg-blue-700 text-white rounded"
+            disabled={loading}
+          >
+            {loading ? "Saving..." : "Save"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}

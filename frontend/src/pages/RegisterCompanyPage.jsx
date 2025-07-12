@@ -33,7 +33,7 @@ export default function RegisterCompanyPage() {
       setSuccess("Company registered successfully!");
       // Optionally, redirect to dashboard after registration
       setTimeout(() => {
-        window.location.href = "/dashboard";
+        window.location.href = "/onboarding";
       }, 1200);
     } catch (err) {
       setError(

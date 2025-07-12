@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 const EMPTY_PROJECT = {
   name: "",
-  subparts: [{ name: "", days: 1 }],
+  subparts: [{ name: "", days: 1, role: "" }],
 };
 
 export default function OnboardingProjectStep({
@@ -10,10 +10,10 @@ export default function OnboardingProjectStep({
   setProject,
   onNext,
   onBack,
+  roles = [], // Pass roles as a prop!
 }) {
   const [error, setError] = useState("");
 
-  // Always start with empty fields, not demo values
   useEffect(() => {
     if (!project || !project.name) setProject(EMPTY_PROJECT);
     // eslint-disable-next-line
@@ -28,7 +28,7 @@ export default function OnboardingProjectStep({
   const addSubpart = () => {
     setProject({
       ...project,
-      subparts: [...project.subparts, { name: "", days: 1 }],
+      subparts: [...project.subparts, { name: "", days: 1, role: "" }],
     });
   };
 
@@ -47,6 +47,7 @@ export default function OnboardingProjectStep({
       if (!s.name.trim()) return "Each subpart must have a name.";
       if (!s.days || s.days < 1)
         return "Each subpart must have at least 1 day.";
+      if (!s.role) return "Each subpart must have a role assigned.";
     }
     return "";
   };
@@ -67,7 +68,8 @@ export default function OnboardingProjectStep({
         Project Template
       </h2>
       <p className="text-cyan-800 font-sans mb-6">
-        Set up a project template with subparts and estimated durations.
+        Set up a project template with subparts, assign roles, and estimated
+        durations.
       </p>
       <div className="mb-6">
         <label className="block text-cyan-900 font-sans mb-2 font-semibold">
@@ -111,6 +113,20 @@ export default function OnboardingProjectStep({
                 placeholder="Days"
                 autoComplete="off"
               />
+              <select
+                className="w-full sm:w-40 px-3 py-2 rounded-xl border border-cyan-200 font-sans"
+                value={sub.role}
+                onChange={(e) =>
+                  handleSubpartChange(idx, "role", e.target.value)
+                }
+              >
+                <option value="">Assign Role</option>
+                {roles.map((role) => (
+                  <option key={role._id} value={role._id}>
+                    {role.name}
+                  </option>
+                ))}
+              </select>
               {project.subparts.length > 1 && (
                 <button
                   className="sm:ml-1 text-red-400 hover:bg-red-50 rounded-full p-2 transition self-start sm:self-auto"
