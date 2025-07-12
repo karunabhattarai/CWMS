@@ -5,6 +5,8 @@ export default function RoleAddModal({ onClose, onRoleAdded }) {
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
 
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
