@@ -32,11 +32,35 @@ const subtaskSchema = new mongoose.Schema({
   attachments: [attachmentSchema],
   startedAt: Date,
   completedAt: Date,
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
+
+  // for cpm
+  estimatedDurationDays: {
+    type: Number,
+    default:1,
+    min:0
+  },
+  dependencies: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Subtask'
+  }],
+  earliestStart: Date,
+  earliestFinish: Date,
+  latestStart: Date,
+  latestFinish: Date,
+  float: {
+    type: Number,
+    default: 0
+  },
+  isCritical: {
+    type: Boolean,
+    default: false
+  },
+  //mathiko for cpm
+  // createdAt: {
+  //   type: Date,
+  //   default: Date.now
+  // } timestamps true rakhem tala
+}, { timestamps: true });
 
 const Subtask = mongoose.model('Subtask', subtaskSchema);
 export default Subtask;

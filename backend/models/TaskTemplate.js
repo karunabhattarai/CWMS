@@ -15,14 +15,16 @@ const taskTemplateSchema = new mongoose.Schema({
     type: String,
   },
   subtasks: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'SubtaskTemplate'
-  }],
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
+    subtaskTemplate: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'SubtaskTemplate',
+      required: true
+    },
+    dependencies: [{
+      type: Number // indexes of dependent subtasks in this array
+    }]
+  }]
+}, {timestamps: true});
 
 const TaskTemplate = mongoose.model('TaskTemplate', taskTemplateSchema);
 export default TaskTemplate;

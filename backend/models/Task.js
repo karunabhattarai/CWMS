@@ -27,12 +27,8 @@ const taskSchema = new mongoose.Schema({
   subtasks: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Subtask'
-  }],
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
+  }]
+}, {timestamps: true});
 
 const Task = mongoose.model('Task', taskSchema);
 export default Task;

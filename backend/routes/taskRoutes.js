@@ -2,11 +2,14 @@
 import express from 'express';
 import authMiddleware from '../middleware/authMiddleware.js';
 import allowRoles from '../middleware/roleMiddleware.js';
+
+
 import {
   createTask,
   getAllTasks,
   updateTask,
-  deleteTask
+  deleteTask,
+  getCPMData
 } from '../controllers/taskController.js';
 
 const router = express.Router();
@@ -38,5 +41,8 @@ router.delete(
   allowRoles('superadmin', 'manager'),
   deleteTask
 );
+
+
+router.get('/task/:id/cpm', getCPMData); // GET /task/:id/cpm
 
 export default router;

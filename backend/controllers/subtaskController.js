@@ -8,8 +8,11 @@ export const getSubtasksByTask = async (req, res) => {
 
     const subtasks = await Subtask.find({ task: taskId })
       .populate('subtaskTemplate', 'name estimatedDurationDays')
-      .populate('assignedMember', 'name email');
-
+      .populate('assignedMember', 'name email')
+      .populate({
+        path: 'dependencies',
+        select: 'subtaskTemplate name'
+      });
     res.status(200).json(subtasks);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch subtasks', error: error.message });
@@ -57,5 +60,24 @@ export const deleteSubtask = async (req, res) => {
     res.status(200).json({ message: 'Subtask deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Failed to delete subtask', error: error.message });
+  }
+};
+
+
+
+//subtask dependency resolver
+
+export const assignSubtaskDependencies = async (subtaskMap, rawSubtasks) => {
+  for (let i = 0; i < rawSubtasks.length; i++) {
+    const { dependencies = [] } = rawSubtasks[i];
+    const subtaskId = subtaskMap[i];
+
+    if (!subtaskId) continue;
+
+    const resolvedDeps = dependencies
+      .map(depIndex => subtaskMap[depIndex])
+      .filter(Boolean); // remove undefined
+
+    await Subtask.findByIdAndUpdate(subtaskId, { dependencies: resolvedDeps });
   }
 };

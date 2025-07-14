@@ -13,17 +13,14 @@ const subtaskTemplateSchema = new mongoose.Schema({
   },
   description: {
     type: String,
+    default: '',
   },
   estimatedDurationDays: {
     type: Number,
     required: true,
     min: 1
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
   }
-});
+}, {timestamps: true});
 
 const SubtaskTemplate = mongoose.model('SubtaskTemplate', subtaskTemplateSchema);
 export default SubtaskTemplate;
