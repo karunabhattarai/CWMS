@@ -4,7 +4,6 @@ import Task from '../models/Task.js';
 import TaskTemplate from '../models/TaskTemplate.js';
 import Subtask from '../models/Subtask.js';
 import SubtaskTemplate from '../models/SubtaskTemplate.js';
-import { getTaskCPM } from '../services/schedulingService.js';
 import {assignSubtaskDependencies} from './subtaskController.js';  
 
 // import { resolveSubtaskDependenciesByName } from '../algorithms/cpm.js';
@@ -204,11 +203,11 @@ export const deleteTask = async (req, res) => {
 
 // for cpm
 
-export const getCPMData = async (req, res) => {
-  try {
-    const result = await getTaskCPM(req.params.id);
-    res.status(200).json(result);
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to calculate CPM', error: err.message });
-  }
-};
+// export const getCPMData = async (req, res) => {
+//   try {
+//     const result = await getTaskCPM(req.params.id);
+//     res.status(200).json(result);
+//   } catch (err) {
+//     res.status(500).json({ message: 'Failed to calculate CPM', error: err.message });
+//   }
+// };

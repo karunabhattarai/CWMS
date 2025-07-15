@@ -8,8 +8,8 @@ import {
   createTask,
   getAllTasks,
   updateTask,
-  deleteTask,
-  getCPMData
+  deleteTask
+  // getCPMData
 } from '../controllers/taskController.js';
 
 const router = express.Router();
@@ -43,6 +43,6 @@ router.delete(
 );
 
 
-router.get('/task/:id/cpm', getCPMData); // GET /task/:id/cpm
+// router.get('/task/:id/cpm', getCPMData); // GET /task/:id/cpm
 
 export default router;
