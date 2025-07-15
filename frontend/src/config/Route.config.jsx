@@ -13,6 +13,7 @@ import MembersPage from "../pages/MembersPage";
 import RegisterCompanyPage from "../pages/RegisterCompanyPage";
 import ProtectedRoute from "../components/ProtectedRoute";
 import CompanyGuardedRoute from "../components/CompanyGuardedRoute";
+import TaskDetailsPage from "../pages/TaskDetailsPage";
 
 const ReportsPage = () => <div className="p-8">Reports Page</div>;
 const SettingsPage = () => <div className="p-8">Settings Page</div>;
@@ -106,6 +107,14 @@ export const routes = [
     element: (
       <DashboardLayout>
         <CreateProjectPage />
+      </DashboardLayout>
+    ),
+  },
+  {
+    path: "/projects/:taskId",
+    element: (
+      <DashboardLayout>
+        <TaskDetailsPage />
       </DashboardLayout>
     ),
   },
