@@ -16,13 +16,18 @@ const taskSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  status: {
+    type: String,
+    enum: ['Not Started', 'In Progress', 'Completed'],
+    default: 'Not Started'
+  },
   deadline: {
     type: Date,
     required: true
   },
   startDate: {
     type: Date,
-    default: Date.now
+    default: null
   },
   subtasks: [{
     type: mongoose.Schema.Types.ObjectId,

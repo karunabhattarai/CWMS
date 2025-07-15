@@ -1,19 +1,19 @@
 // This file sets up the connection to MongoDB using Mongoose.
 
 // so had the dotenv package to load environment variables from a .env file
-import * as dotenv from "dotenv";
-import mongoose from "mongoose";
-import express from "express";
+import * as dotenv from 'dotenv';
+import mongoose from 'mongoose';
+import express from 'express';
 // Importing routes
-import userRoutes from "./routes/userRoutes.js";
-import roleRoutes from "./routes/roleRoutes.js";
-import memberRoutes from "./routes/memberRoutes.js";
+import userRoutes from './routes/userRoutes.js';
+import roleRoutes from './routes/roleRoutes.js';
+import memberRoutes from './routes/memberRoutes.js';
 import companyRoutes from "./routes/companyRoutes.js";
 import subtaskTemplateRoutes from './routes/subtaskTemplateRoutes.js';
 import taskTemplateRoutes from './routes/taskTemplateRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
 import subtaskRoutes from './routes/subtaskRoutes.js';
-
+import schedulingRoutes from './routes/schedulingRoutes.js';
 
 
 import cors from "cors";
@@ -45,8 +45,7 @@ app.use('/api/subtask-template', subtaskTemplateRoutes);
 app.use('/api/task-template', taskTemplateRoutes);
 app.use('/api/task', taskRoutes);
 app.use('/api/subtask', subtaskRoutes);
-
-
+app.use('/api/schedule', schedulingRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
