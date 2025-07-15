@@ -83,24 +83,38 @@ export const scheduleTask = async (req, res) => {
     }
 
     // STEP 4: Save CPM results back to subtasks
-    for (let i = 0; i < subtasks.length; i++) {
-      const st = subtasks[i];
-      const cpm = cpmResult[i];
+    // for (let i = 0; i < subtasks.length; i++) {
+    //   const st = subtasks[i];
+    //   const cpm = cpmResult[i];
 
-      const start = new Date(now.getTime() + cpm.ES * 24 * 60 * 60 * 1000);
-      const finish = new Date(now.getTime() + cpm.EF * 24 * 60 * 60 * 1000);
-      const latestStart = new Date(now.getTime() + cpm.LS * 24 * 60 * 60 * 1000);
-      const latestFinish = new Date(now.getTime() + cpm.LF * 24 * 60 * 60 * 1000);
+    //   const start = new Date(now.getTime() + cpm.ES * 24 * 60 * 60 * 1000);
+    //   const finish = new Date(now.getTime() + cpm.EF * 24 * 60 * 60 * 1000);
+    //   const latestStart = new Date(now.getTime() + cpm.LS * 24 * 60 * 60 * 1000);
+    //   const latestFinish = new Date(now.getTime() + cpm.LF * 24 * 60 * 60 * 1000);
 
-      st.earliestStart = start;
-      st.earliestFinish = finish;
-      st.latestStart = latestStart;
-      st.latestFinish = latestFinish;
-      st.float = cpm.slack;
-      st.isCritical = cpm.isCritical;
+    //   st.earliestStart = start;
+    //   st.earliestFinish = finish;
+    //   st.latestStart = latestStart;
+    //   st.latestFinish = latestFinish;
+    //   st.float = cpm.slack;
+    //   st.isCritical = cpm.isCritical;
 
-      await st.save();
-    }
+    //   await st.save();
+    // }
+    // updated for parallel and better
+    await Promise.all(
+    subtasks.map((st, i) => {
+        const cpm = cpmResult[i];
+        st.earliestStart = new Date(now.getTime() + cpm.ES * 24 * 60 * 60 * 1000);
+        st.earliestFinish = new Date(now.getTime() + cpm.EF * 24 * 60 * 60 * 1000);
+        st.latestStart = new Date(now.getTime() + cpm.LS * 24 * 60 * 60 * 1000);
+        st.latestFinish = new Date(now.getTime() + cpm.LF * 24 * 60 * 60 * 1000);
+        st.float = cpm.slack;
+        st.isCritical = cpm.isCritical;
+        return st.save();
+    })
+    );
+
 
     // STEP 5: Prepare and return levelized topological order and CPM data
     // const levelized = levelizedTopologicalSort(indexedSubtasks); relocated for response
