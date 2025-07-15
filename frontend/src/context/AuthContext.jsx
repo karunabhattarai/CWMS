@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
 
 const AuthContext = createContext();
@@ -7,39 +7,29 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Utility to check if token is expired
-  const isTokenExpired = (token) => {
-    try {
-      const decoded = jwtDecode(token);
-      const currentTime = Date.now() / 1000;
-      return decoded.exp < currentTime;
-    } catch (err) {
-      return true;
-    }
-  };
-
   useEffect(() => {
     const token = localStorage.getItem("token");
-
-    if (token && !isTokenExpired(token)) {
-      const decodedUser = jwtDecode(token);
-      setUser({
-        ...decodedUser,
-        isAuthenticated: true,
-        token,
-      });
-    } else {
-      logout();
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        setUser({
+          ...decoded,
+          isAuthenticated: true,
+          token,
+        });
+      } catch (e) {
+        setUser(null);
+      }
     }
-
     setLoading(false);
   }, []);
 
+  // Login only expects a token string
   const login = (token) => {
     localStorage.setItem("token", token);
-    const decodedUser = jwtDecode(token);
+    const decoded = jwtDecode(token);
     setUser({
-      ...decodedUser,
+      ...decoded,
       isAuthenticated: true,
       token,
     });
@@ -50,8 +40,9 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  // setUser can be used for direct profile updates
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, setUser, loading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,18 +1,21 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, Navigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
+const REDIRECT_DELAY = 1200; // ms
 
 export default function RegisterCompanyPage() {
   const location = useLocation();
+  const { user, setUser } = useAuth();
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [info, setInfo] = useState("");
 
-  // Show redirect message from navigation state
   useEffect(() => {
     if (location.state?.message) {
       setInfo(location.state.message);
@@ -21,44 +24,56 @@ export default function RegisterCompanyPage() {
     }
   }, [location.state]);
 
+  //Prevent access if user already has a company
+  if (user?.company) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  const fetchAndSetUserProfile = async (token) => {
+    try {
+      // Use user.id or user._id as appropriate
+      const res = await axios.get(
+        `${API_BASE}/api/user/${user?.id || user?._id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setUser({ ...res.data, isAuthenticated: true, token });
+    } catch (e) {
+      setError("Profile update failed");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
-
     if (!name.trim()) {
-      setError("Company name is required.");
+      setError("Company name required.");
       return;
     }
-
     setLoading(true);
-
+    const token = localStorage.getItem("token");
     try {
-      const token = localStorage.getItem("token");
-
-      const res = await axios.post(
+      await axios.post(
         `${API_BASE}/api/company/create`,
-        { name },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          withCredentials: true,
-        }
+        { name, description },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      setSuccess("Company registered successfully!");
-
-      // Optional: redirect to dashboard after 1.2 seconds
+      setSuccess("Company registered.");
+      await fetchAndSetUserProfile(token);
       setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 1200);
+        window.location.href = "/onboarding";
+      }, REDIRECT_DELAY);
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          err.message ||
-          "Failed to register company"
-      );
+      if (err.response?.data?.message === "Company already exists") {
+        await fetchAndSetUserProfile(token);
+        setTimeout(() => {
+          window.location.href = "/onboarding";
+        }, REDIRECT_DELAY);
+      } else {
+        setError("Registration failed");
+      }
     } finally {
       setLoading(false);
     }
@@ -73,28 +88,44 @@ export default function RegisterCompanyPage() {
         <h2 className="text-2xl font-bold mb-4 text-green-900">
           Register Company
         </h2>
-
-        {/* Info message from redirect */}
         {info && (
           <div className="mb-4 px-4 py-2 bg-yellow-100 border border-yellow-400 text-yellow-800 rounded">
             {info}
           </div>
         )}
-
-        {/* Company name input */}
+        {/* Company Name (with label) */}
+        <label
+          htmlFor="company-name"
+          className="block mb-1 text-cyan-900 font-medium"
+        >
+          Your Company
+        </label>
         <input
+          id="company-name"
+          type="text"
           className="w-full mb-4 p-2 border rounded"
           placeholder="Company Name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           disabled={loading}
         />
-
-        {/* Error and success messages */}
+        {/* Company Description (with label) */}
+        <label
+          htmlFor="company-description"
+          className="block mb-1 text-cyan-900 font-medium"
+        >
+          Describe your company
+        </label>
+        <textarea
+          id="company-description"
+          className="w-full mb-4 p-2 border rounded h-24 resize-none"
+          placeholder="Company Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          disabled={loading}
+        />
         {error && <div className="text-red-600 mb-2">{error}</div>}
         {success && <div className="text-green-700 mb-2">{success}</div>}
-
-        {/* Submit button */}
         <div className="flex justify-end gap-2">
           <button
             type="submit"

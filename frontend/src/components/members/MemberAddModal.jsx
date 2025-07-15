@@ -10,6 +10,16 @@ export default function MemberAddModal({ onClose, onMemberAdded, roles }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Add or remove role handlers
+  const addRole = (roleId) => {
+    if (!selectedRoles.includes(roleId)) {
+      setSelectedRoles([...selectedRoles, roleId]);
+    }
+  };
+  const removeRole = (roleId) => {
+    setSelectedRoles(selectedRoles.filter((id) => id !== roleId));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim() || !email.trim()) {
@@ -62,23 +72,47 @@ export default function MemberAddModal({ onClose, onMemberAdded, roles }) {
         />
         <div className="mb-4">
           <label className="block mb-2">Roles</label>
-          <select
-            className="w-full p-2 border rounded"
-            multiple
-            value={selectedRoles}
-            onChange={(e) =>
-              setSelectedRoles(
-                Array.from(e.target.selectedOptions, (option) => option.value)
-              )
-            }
-            disabled={loading}
-          >
+          {/* Pills for selected roles */}
+          <div className="flex flex-wrap gap-2 mb-2">
+            {selectedRoles.map((roleId) => {
+              const role = roles.find((r) => r._id === roleId);
+              if (!role) return null;
+              return (
+                <span
+                  key={roleId}
+                  className="flex items-center bg-green-100 text-green-900 rounded-full px-3 py-1 text-sm"
+                >
+                  {role.name}
+                  <button
+                    type="button"
+                    className="ml-2 w-5 h-5 flex items-center justify-center rounded-full bg-green-300 hover:bg-green-500 text-green-900 hover:text-white"
+                    onClick={() => removeRole(roleId)}
+                    aria-label={`Remove ${role.name}`}
+                  >
+                    &times;
+                  </button>
+                </span>
+              );
+            })}
+          </div>
+          {/* Clickable roles list */}
+          <div className="flex flex-wrap gap-2">
             {roles.map((role) => (
-              <option key={role._id} value={role._id}>
+              <button
+                key={role._id}
+                type="button"
+                className={`px-3 py-1 rounded-full border ${
+                  selectedRoles.includes(role._id)
+                    ? "bg-green-600 text-white border-green-700"
+                    : "bg-gray-100 text-green-800 border-green-300 hover:bg-green-200"
+                }`}
+                onClick={() => addRole(role._id)}
+                disabled={selectedRoles.includes(role._id) || loading}
+              >
                 {role.name}
-              </option>
+              </button>
             ))}
-          </select>
+          </div>
         </div>
         {error && <div className="text-red-600 mb-2">{error}</div>}
         <div className="flex justify-end gap-2">

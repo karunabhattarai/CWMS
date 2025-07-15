@@ -6,7 +6,7 @@ export default function CompanyGuardedRoute({ children }) {
 
   if (loading) return null;
   if (!user || !user.isAuthenticated) return <Navigate to="/login" replace />;
-  if (!user.hasCompany) {
+  if (!user.company) {
     return (
       <Navigate
         to="/company-registration"
