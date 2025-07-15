@@ -1,11 +1,5 @@
-// src/pages/ProjectsPage.jsx
-import { useState, useMemo } from "react";
-import {
-  tasks as allTasks,
-  roles,
-  members,
-  subtasks as allSubtasks,
-} from "../dummyData.jsx";
+import { useState, useEffect, useMemo } from "react";
+import axios from "axios";
 import ProjectList from "../components/projects/ProjectList";
 import ProjectSearchFilter from "../components/projects/ProjectSearchFilter";
 
@@ -16,18 +10,14 @@ const statusStyles = {
   delayed: "bg-rose-100 text-rose-700 border border-rose-200",
 };
 
-function getProjectStatusAndProgress(task, subtasks) {
+function getProjectStatusAndProgress(task) {
   if (!task.subtasks?.length) return { status: "scheduled", progress: 0 };
   const total = task.subtasks.length;
-  const completed = subtasks.filter(
-    (s) => s.task === task._id && s.status === "completed"
+  const completed = task.subtasks.filter(
+    (s) => s.status === "Completed"
   ).length;
-  const delayed = subtasks.some(
-    (s) => s.task === task._id && s.status === "delayed"
-  );
-  const inprogress = subtasks.some(
-    (s) => s.task === task._id && s.status === "inprogress"
-  );
+  const delayed = task.subtasks.some((s) => s.status === "Delayed");
+  const inprogress = task.subtasks.some((s) => s.status === "In Progress");
   if (completed === total) return { status: "completed", progress: 100 };
   if (delayed)
     return {
@@ -46,13 +36,63 @@ function getProjectStatusAndProgress(task, subtasks) {
 }
 
 export default function ProjectsPage() {
-  const [tasks, setTasks] = useState(allTasks);
-  const [subtasks, setSubtasks] = useState(allSubtasks);
-
-  // Search & filter
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateSort, setDateSort] = useState("newest");
+  const [error, setError] = useState("");
+
+  const token = localStorage.getItem("token");
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
+  useEffect(() => {
+    async function fetchTasks() {
+      setLoading(true);
+      setError("");
+      try {
+        const res = await axios.get(`${API_BASE}/api/task`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        console.log(res.data);
+        setTasks(res.data);
+      } catch (e) {
+        setError(
+          e.response?.data?.message || e.message || "Failed to fetch projects"
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchTasks();
+  }, []);
+
+  async function handleDeleteProject(taskId) {
+    if (!window.confirm("Are you sure you want to delete this project?"))
+      return;
+    try {
+      await axios.delete(`${API_BASE}/api/task/${taskId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setTasks((prev) => prev.filter((t) => t._id !== taskId));
+    } catch (e) {
+      console.log(e);
+      alert(
+        e.response?.data?.message || e.message || "Failed to delete project"
+      );
+    }
+  }
+
+  function handleEditProject(taskId) {
+    window.location.href = `/editproject/${taskId}`;
+  }
+
+  function handleViewProject(taskId) {
+    window.location.href = `/projects/${taskId}`;
+  }
 
   const filteredTasks = useMemo(() => {
     let filtered = [...tasks];
@@ -63,29 +103,19 @@ export default function ProjectsPage() {
     }
     if (statusFilter !== "all") {
       filtered = filtered.filter((task) => {
-        const { status } = getProjectStatusAndProgress(task, subtasks);
+        const { status } = getProjectStatusAndProgress(task);
         return status === statusFilter;
       });
     }
     filtered.sort((a, b) => {
-      if (dateSort === "newest")
-        return new Date(b.startDate) - new Date(a.startDate);
-      if (dateSort === "oldest")
-        return new Date(a.startDate) - new Date(b.startDate);
+      const ad = a.createdAt || a.deadline || 0;
+      const bd = b.createdAt || b.deadline || 0;
+      if (dateSort === "newest") return new Date(bd) - new Date(ad);
+      if (dateSort === "oldest") return new Date(ad) - new Date(bd);
       return 0;
     });
     return filtered;
-  }, [tasks, search, statusFilter, dateSort, subtasks]);
-
-  function handleDeleteProject(taskId) {
-    setTasks((prev) => prev.filter((t) => t._id !== taskId));
-  }
-  function handleEditProject(taskId) {
-    alert("Edit functionality coming soon!");
-  }
-  function handleViewProject(taskId) {
-    window.location.href = `/projects/${taskId}`;
-  }
+  }, [tasks, search, statusFilter, dateSort]);
 
   return (
     <div className="min-h-screen bg-[#efeee8] px-4 py-8">
@@ -106,15 +136,22 @@ export default function ProjectsPage() {
           dateSort={dateSort}
           setDateSort={setDateSort}
         />
-        <ProjectList
-          projects={filteredTasks}
-          subtasks={subtasks}
-          onEdit={handleEditProject}
-          onDelete={handleDeleteProject}
-          onView={handleViewProject}
-          statusStyles={statusStyles}
-          getProjectStatusAndProgress={getProjectStatusAndProgress}
-        />
+        {loading ? (
+          <div className="text-center py-10 text-green-900 font-serif">
+            Loading projects...
+          </div>
+        ) : error ? (
+          <div className="text-center py-10 text-red-700">{error}</div>
+        ) : (
+          <ProjectList
+            projects={filteredTasks}
+            onEdit={handleEditProject}
+            onDelete={handleDeleteProject}
+            onView={handleViewProject}
+            statusStyles={statusStyles}
+            getProjectStatusAndProgress={getProjectStatusAndProgress}
+          />
+        )}
       </div>
     </div>
   );

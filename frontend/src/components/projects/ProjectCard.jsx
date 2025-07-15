@@ -1,18 +1,17 @@
 export default function ProjectCard({
   project,
-  subtasks,
   onEdit,
   onDelete,
   onView,
   statusStyles,
   getProjectStatusAndProgress,
 }) {
-  const { status, progress } = getProjectStatusAndProgress(project, subtasks);
+  const { status, progress } = getProjectStatusAndProgress(project);
 
   return (
     <div className="bg-white rounded-xl shadow border border-green-100 p-6 flex flex-col gap-4 hover:shadow-md transition">
       <div
-        className="flex items-center justify-between"
+        className="flex items-center justify-between cursor-pointer"
         onClick={() => onView(project._id)}
       >
         <span className="text-lg font-bold font-serif text-green-900">
@@ -46,21 +45,26 @@ export default function ProjectCard({
             className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center bg-green-100 text-green-800 font-bold text-sm"
             title={member.name}
           >
-            {member.name[0]}
+            {member.name?.[0]}
           </div>
         ))}
       </div>
-
       <div className="flex gap-2 mt-2">
         <button
           className="px-3 py-1 rounded bg-green-100 text-green-800 text-xs font-semibold hover:bg-green-200 transition"
-          onClick={() => onEdit(project._id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(project._id);
+          }}
         >
           Edit
         </button>
         <button
           className="px-3 py-1 rounded bg-rose-100 text-rose-700 text-xs font-semibold hover:bg-rose-200 transition"
-          onClick={() => onDelete(project._id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(project._id);
+          }}
         >
           Delete
         </button>
