@@ -117,6 +117,31 @@ export const getAllTasks = async (req, res) => {
   }
 };
 
+export const getTaskById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const task = await Task.findOne({ _id: id, company: req.user.company })
+      .populate('taskTemplate')
+      .populate({
+        path: 'subtasks',
+        populate: [
+          { path: 'subtaskTemplate', select: 'name' },
+          { path: 'assignedMember', select: 'name' }
+        ]
+      });
+
+    if (!task) return res.status(404).json({ message: 'Task not found' });
+
+    res.status(200).json(task);
+  } catch (error) {
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+};
+
+
+
+
 export const updateTask = async (req, res) => {
   try {
     const { id } = req.params;

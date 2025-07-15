@@ -77,6 +77,23 @@ const subtaskSchema = new mongoose.Schema({
     default: false
   },
   //mathiko for cpm
+
+  // for pert
+  optimistic: {
+    type: Number,
+    default: null
+  },
+  mostLikely: {
+    type: Number,
+    default: null
+  },
+  pessimistic: {
+    type: Number,
+    default: null
+  }
+
+  //for pert mathiko
+
   // createdAt: {
   //   type: Date,
   //   default: Date.now
