@@ -10,15 +10,6 @@ function getStatus(subtask) {
   const isBacklog =
     deadlineDate && deadlineDate < now && subtask.status !== "Completed";
 
-  console.log("Checking:", {
-    name: subtask.name,
-    deadline: subtask.deadline,
-    deadlineDate,
-    now,
-    status: subtask.status,
-    isBacklog,
-  });
-
   if (subtask.status === "Completed") return "Completed";
   if (isBacklog) return "Backlog";
   if (subtask.status === "In Progress") return "In Progress";

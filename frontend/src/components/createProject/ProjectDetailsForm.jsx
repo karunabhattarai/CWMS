@@ -1,5 +1,8 @@
+import axios from "axios";
 import { useState, useMemo } from "react";
 import SubtaskAssignmentRow from "./SubtaskAssignmentRow";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 export default function ProjectDetailsForm({
   template,
@@ -43,6 +46,9 @@ export default function ProjectDetailsForm({
   );
   const [assigned, setAssigned] = useState(initialAssigned);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const token = localStorage.getItem("token");
 
   function handleMemberChange(idx, memberId) {
     setAssigned((prev) =>
@@ -56,8 +62,7 @@ export default function ProjectDetailsForm({
       )
     );
   }
-
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     if (!projectName.trim()) {
       setError("Project name is required.");
@@ -68,14 +73,41 @@ export default function ProjectDetailsForm({
       return;
     }
     if (new Date(deadline) < new Date(startDate)) {
-      setError("Deadline cannot be before start date.");
+      setError("Deadline cannot be earlier than start date.");
       return;
     }
     setError("");
-    alert(
-      `Project "${projectName}" created with priority "${priority}", start: ${startDate}, deadline: ${deadline}`
-    );
-    navigate("/projects");
+    setSaving(true);
+    try {
+      await axios.post(
+        `${API_BASE}/api/task`,
+        {
+          taskTemplate: template._id,
+          name: projectName,
+          deadline,
+          subtasks: assigned.map(
+            ({ subtaskTemplate, assignedMember, estimatedDurationDays }) => ({
+              subtaskTemplate,
+              assignedMember,
+              estimatedDurationDays,
+            })
+          ),
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      navigate("/projects");
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          "Failed to create project. Please try again."
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -168,8 +200,9 @@ export default function ProjectDetailsForm({
         <button
           type="submit"
           className="w-1/2 px-4 py-2 rounded bg-green-700 text-white font-semibold hover:bg-green-800 transition"
+          disabled={saving}
         >
-          Create Project
+          {saving ? "Creating..." : "Create Project"}
         </button>
       </div>
     </form>

@@ -1,16 +1,71 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
+import axios from "axios";
 import KanbanTab from "../components/taskDetails/KanbanTab";
 import GanttTab from "../components/taskDetails/GanttTab";
 
-import { tasks, subtasks } from "../dummyData";
-
 export default function TaskDetailsPage() {
   const { taskId } = useParams();
-  const task = tasks.find((t) => t._id === taskId);
-  const relatedSubtasks = subtasks.filter((s) => s.task === taskId);
-
+  const [task, setTask] = useState(null);
+  const [subtasks, setSubtasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("kanban");
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          setError("User not authenticated");
+          setLoading(false);
+          return;
+        }
+
+        // Fetch the task
+        const taskRes = await axios.get(`${API_BASE}/api/task/${taskId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        // Fetch subtasks for this task
+        const subtasksRes = await axios.get(
+          `${API_BASE}/api/subtask/task/${taskId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        setTask(taskRes.data);
+        setSubtasks(subtasksRes.data);
+      } catch (err) {
+        setError(
+          err.response?.data?.message || err.message || "Failed to fetch data"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [taskId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-600 text-xl">
+        Loading...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-600 text-xl font-bold">
+        {error}
+      </div>
+    );
+  }
 
   if (!task) {
     return (
@@ -26,7 +81,6 @@ export default function TaskDetailsPage() {
         <h1 className="text-2xl font-bold mb-4 text-green-900 font-serif">
           {task.name}
         </h1>
-
         <div className="flex border-b mb-4">
           <button
             className={`py-2 px-4 rounded-t-lg ${
@@ -49,11 +103,10 @@ export default function TaskDetailsPage() {
             Gantt Chart
           </button>
         </div>
-
         {activeTab === "kanban" ? (
-          <KanbanTab subtasks={relatedSubtasks} />
+          <KanbanTab subtasks={subtasks} />
         ) : (
-          <GanttTab subtasks={relatedSubtasks} />
+          <GanttTab subtasks={subtasks} />
         )}
       </div>
     </div>
