@@ -3,6 +3,12 @@ import { computeCPM } from '../algorithms/cpm.js';
 import Task from '../models/Task.js';
 import Subtask from '../models/Subtask.js';
 import { getSchedulingSuggestion } from '../services/SchedulingSuggestionService.js';
+
+import { computePERT } from '../algorithms/pert.js';
+import { buildPERTExplanation } from '../utils/pertHelpers.js'; 
+
+
+
 export const scheduleTask = async (req, res) => {
   try {
     const { taskId } = req.params;
@@ -131,7 +137,7 @@ export const scheduleTask = async (req, res) => {
   }
 };
 
-
+// this makes explanation for the cpm scheduling
 function buildExplanation(levelized, subtasks) {
   const explanationStages = [];
 
@@ -149,3 +155,115 @@ function buildExplanation(levelized, subtasks) {
 
   return explanationStages;
 }
+
+
+
+
+
+
+//for pert
+
+export const scheduleTaskPERT = async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const task = await Task.findById(taskId);
+    if (!task) return res.status(404).json({ message: 'Task not found' });
+
+    const subtasks = await Subtask.find({ task: taskId }).populate('dependencies');
+
+    const formatted = subtasks.map((st, i) => ({
+      optimistic: st.optimistic,
+      mostLikely: st.mostLikely,
+      pessimistic: st.pessimistic,
+      dependencies: st.dependencies.map(d => subtasks.findIndex(s => s._id.equals(d._id)))
+    }));
+
+    const result = computePERT(formatted);
+
+    res.status(200).json({
+      message: 'PERT scheduling completed',
+      projectDuration: result.projectDuration,
+      totalVariance: result.totalVariance,
+      stdDeviation: Math.sqrt(result.totalVariance),
+      subtasks: result.subtasks
+    });
+
+  } catch (err) {
+    console.error('PERT Error:', err);
+    res.status(500).json({ message: 'Internal server error', error: err.message });
+  }
+};
+
+export const schedulePERTFromRaw = async (req, res) => {
+  try {
+    const subtasks = req.body;
+
+    // Basic validation (you can extend this)
+    if (!Array.isArray(subtasks) || subtasks.length === 0) {
+      return res.status(400).json({ message: 'Invalid subtasks array in request body' });
+    }
+
+    // Run your PERT algorithm on raw input
+    const pertResult = computePERT(subtasks);
+
+    // You might want to build some explanation or critical path info here similarly
+
+    res.status(200).json({
+      message: 'PERT scheduling completed successfully',
+      pertData: pertResult,
+    });
+  } catch (error) {
+    console.error('PERT scheduling error:', error);
+    res.status(500).json({ message: 'Internal Server Error', error: error.message });
+  }
+};
+
+//below updted but is throwing error
+// export const schedulePERTFromRaw = async (req, res) => {
+//   try {
+//     const subtasks = req.body;
+
+//     // Basic validation (you can extend this)
+//     if (!Array.isArray(subtasks) || subtasks.length === 0) {
+//       return res.status(400).json({ message: 'Invalid subtasks array in request body' });
+//     }
+
+//     // Run your PERT algorithm on raw input
+//     const pertResult = computePERT(subtasks);
+//     const formattedSubtasks = subtasks.map((st, idx) => {
+//     if (!st || !st._id) {
+//         console.error(`Subtask at index ${idx} is missing _id`, st);
+//         // handle or skip this subtask, or throw error
+//     }
+//     return {
+//         _id: st._id.toString(),
+//         estimatedDurationDays: st.estimatedDurationDays,
+//         dependencies: (st.dependencies || []).map(d => d._id.toString()),
+//     };
+//     });
+//     const indexedSubtasks = formattedSubtasks.map(st => ({
+//       estimatedDurationDays: st.estimatedDurationDays,
+//       dependencies: st.dependencies.map(depId => indexMap.get(depId)),
+//     }));
+//     // You might want to build some explanation or critical path info here similarly
+//     const levelized = levelizedTopologicalSort(indexedSubtasks); // same as CPM, but on PERT data indexes
+
+//     // You might get deadlineDays from the task deadline - current date
+//     const now = task.startDate || new Date();
+//     const deadline = new Date(task.deadline);
+//     const deadlineDays = Math.ceil((deadline - now) / (1000 * 60 * 60 * 24));
+
+//     // Build explanation
+//     const explanation = buildPERTExplanation(levelized, subtasks, projectDuration, totalVariance, deadlineDays);
+
+//     res.status(200).json({
+//     message: 'PERT scheduling completed successfully',
+//     pertData: { subtasks: pertResults, projectDuration, totalVariance },
+//     topologicalOrder: levelized,
+//     explanation
+//     });
+//   } catch (error) {
+//     console.error('PERT scheduling error:', error);
+//     res.status(500).json({ message: 'Internal Server Error', error: error.message });
+//   }
+// };
