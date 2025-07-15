@@ -37,7 +37,7 @@ export default function RegisterForm() {
         res.data.message ||
           "Registration successful! Please check your email for verification."
       );
-      navigate("/onboarding");
+      navigate("/company-registration");
     } catch (err) {
       setError(
         err.response?.data?.message || "Registration failed. Please try again."

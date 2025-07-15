@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-import { jwtDecode } from "jwt-decode";
+import { useAuth } from "../context/AuthContext";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -8,22 +8,24 @@ export default function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const { login } = useAuth(); // 👈 use login from context
+
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
     setError("");
+
     try {
       const res = await axios.post("http://localhost:5000/api/user/login", {
         email,
         password,
       });
+
       const token = res.data.token;
-      localStorage.setItem("token", token);
+      login(token); // 👈 store token and user info in context
 
-      // Decode the JWT to get user info
-      const user = jwtDecode(token);
+      const user = JSON.parse(atob(token.split(".")[1])); // decode manually
 
-      // Redirect logic
       if (user.role === "superadmin" && !user.company) {
         window.location.href = "/company-registration";
       } else {
@@ -67,7 +69,7 @@ export default function LoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-2 rounded mt-2 bg-orange-800 text-white font-medium font-sans hover:bg-green-600 transition"
+        className="w-full py-2 rounded mt-2 bg-green-600 text-white font-medium font-sans hover:bg-green-800 transition"
       >
         {loading ? "Logging in..." : "Login"}
       </button>
