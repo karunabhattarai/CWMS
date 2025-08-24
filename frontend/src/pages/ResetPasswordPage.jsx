@@ -3,13 +3,20 @@ import AuthForm from "../components/AuthForm";
 
 export default function ResetPasswordPage() {
   const [token, setToken] = useState("");
+  const [isWelcome, setIsWelcome] = useState(false);
 
   useEffect(() => {
     // Get token from URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const tokenFromUrl = urlParams.get("token");
+    const typeFromUrl = urlParams.get("type");
+
     if (tokenFromUrl) {
       setToken(tokenFromUrl);
+    }
+
+    if (typeFromUrl === "welcome") {
+      setIsWelcome(true);
     }
   }, []);
 
@@ -42,10 +49,14 @@ export default function ResetPasswordPage() {
       <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
         <AuthForm
           type="reset-password"
-          title="Set New Password"
-          subtitle="Please enter your new password below."
-          buttonText="Reset Password"
-          loadingText="Resetting..."
+          title={isWelcome ? "Welcome! Set Your Password" : "Set New Password"}
+          subtitle={
+            isWelcome
+              ? "Please set your password to activate your account and get started."
+              : "Please enter your new password below."
+          }
+          buttonText="Set Password"
+          loadingText="Setting Password..."
         />
         <div className="mt-4 text-center">
           <button

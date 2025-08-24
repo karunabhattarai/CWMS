@@ -16,6 +16,7 @@ export default function CreateManagerModal({
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -43,10 +44,11 @@ export default function CreateManagerModal({
     try {
       const token = localStorage.getItem("token");
       await axios.post(
-        `${API_BASE}/api/user/register/manager`,
+        `${API_BASE}/api/user/register`,
         {
           name: formData.name,
           email: formData.email,
+          role: "manager",
         },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -54,8 +56,11 @@ export default function CreateManagerModal({
         }
       );
 
-      // Success - close modal and redirect to dashboard
-      onManagerCreated();
+      // Success - show success message for 2 seconds then redirect
+      setSuccess(true);
+      setTimeout(() => {
+        onManagerCreated();
+      }, 2000);
     } catch (err) {
       setError(
         err.response?.data?.message || err.message || "Failed to create manager"
@@ -68,6 +73,7 @@ export default function CreateManagerModal({
   const handleClose = () => {
     setFormData({ name: "", email: "" });
     setError("");
+    setSuccess(false);
     onClose();
   };
 
@@ -105,7 +111,7 @@ export default function CreateManagerModal({
               onChange={handleInputChange}
               placeholder="Enter manager's full name"
               className="w-full px-4 py-2 border border-cyan-200 rounded-xl focus:ring-2 focus:ring-orange-800 focus:border-transparent font-sans"
-              disabled={loading}
+              disabled={loading || success}
             />
           </div>
 
@@ -124,7 +130,7 @@ export default function CreateManagerModal({
               onChange={handleInputChange}
               placeholder="Enter manager's email address"
               className="w-full px-4 py-2 border border-cyan-200 rounded-xl focus:ring-2 focus:ring-orange-800 focus:border-transparent font-sans"
-              disabled={loading}
+              disabled={loading || success}
             />
           </div>
         </div>
@@ -135,27 +141,34 @@ export default function CreateManagerModal({
           </div>
         )}
 
+        {success && (
+          <div className="text-green-600 text-sm bg-green-50 p-3 rounded-xl border border-green-200">
+            ✅ Manager created successfully! They will receive a email with
+            instructions to set their password.
+          </div>
+        )}
+
         <div className="flex flex-col sm:flex-row gap-3 pt-4">
           <button
-            className="flex-1 text-sm underline text-green-600 font-medium font-sans hover:text-orange-800 transition px-4 py-2"
+            className="flex-1 text-sm underline text-green-600 font-medium font-sans hover:text-orange-800 transition px-4 py-2 disabled:opacity-50"
             onClick={onSkip}
-            disabled={loading}
+            disabled={loading || success}
           >
             Skip Without Manager
           </button>
           <button
             className="flex-1 bg-orange-800 text-white px-6 py-2 rounded-xl font-semibold font-sans hover:bg-green-600 transition disabled:opacity-50"
             onClick={handleCreateManager}
-            disabled={loading}
+            disabled={loading || success}
           >
-            {loading ? "Creating..." : "Create Manager"}
+            {success ? "Created!" : loading ? "Creating..." : "Create Manager"}
           </button>
         </div>
 
         <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-3">
           <p className="text-xs text-cyan-800 text-center font-sans">
-            📧 The manager will receive an email verification link and can set
-            their password after verification.
+            📧 The manager will receive a email with instructions to activate
+            their account.
           </p>
         </div>
       </div>

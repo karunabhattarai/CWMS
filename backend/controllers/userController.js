@@ -86,14 +86,34 @@ export const registerUser = async (req, res) => {
     const newUser = new User(newUserData);
     await newUser.save();
 
-    // Send verification email
-    const verifyLink = `${process.env.BACKEND_URL}/api/user/verify-email?token=${token}`;
-    const message = `
-      <h1>Email Verification</h1>
-      <p>Please click the link below to verify your email:</p>
-      <a href="${verifyLink}">Verify Email</a>
-    `;
-    await sendEmail(email, 'Verify your email', message);
+    //kb: Send appropriate email based on role
+    if (role === "superadmin") {
+      // For superadmin, use regular verification email
+      const verifyLink = `${process.env.BACKEND_URL}/api/user/verify-email?token=${token}`;
+      const message = `
+        <h1>Email Verification</h1>
+        <p>Please click the link below to verify your email:</p>
+        <a href="${verifyLink}">Verify Email</a>
+      `;
+      await sendEmail(email, "Verify your email", message);
+    } else {
+      //kb: For managers and employees, send password reset email for initial setup
+      const resetToken = crypto.randomBytes(32).toString("hex");
+      newUser.resetPasswordToken = resetToken;
+      newUser.resetPasswordExpires = Date.now() + 1000 * 60 * 60 * 24; // 24 hours
+      await newUser.save();
+
+      const resetLink = `${
+        process.env.FRONTEND_URL || "http://localhost:5173"
+      }/reset-password?token=${resetToken}&type=welcome`;
+      const message = `
+        <h1>Welcome to CWMS!</h1>
+        <p>You have been assigned as a ${role} in your company. Please click the link below to set your password and activate your account:</p>
+        <a href="${resetLink}">Set Your Password</a>
+        <p>This link will expire in 24 hours.</p>
+      `;
+      await sendEmail(email, "Welcome to CWMS - Activate Your Account", message);
+    }
 
     // Send response
     const msg = `${role.charAt(0).toUpperCase() + role.slice(1)} registered successfully. Email verification link sent to email.`;
@@ -391,6 +411,12 @@ export const resetPassword = async (req, res) => {
     user.password = newPassword;
     user.resetPasswordToken = null; // Clear reset token
     user.resetPasswordExpires = null; // Clear expiration date
+
+    //kb: Also set user as verified (for new members setting their first password)
+    if (!user.isVerified) {
+      user.isVerified = true;
+    }
+
     await user.save();
     res.status(200).json({ message: "Password reset successfully" });
   } catch (error) {
