@@ -1,5 +1,3 @@
-// services/SchedulingSuggestionService.js
-
 export const getSchedulingSuggestion = (criticalPathDuration, deadlineDuration, cpmResult) => {
   // If deadline is less than critical path, suggest extending or shortening critical subtasks
 
