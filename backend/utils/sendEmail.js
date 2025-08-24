@@ -1,15 +1,17 @@
 import nodemailer from 'nodemailer';
+import * as dotenv from 'dotenv';
+dotenv.config({ path: "../.env" });
+// const transporter = nodemailer.createTransport({
+//     host: 'smtp.ethereal.email',
+//     port: 587,
+//     secure: false, // true for 465, false for other ports
+//     auth: {
+//         user:'moshe.morissette@ethereal.email',
+//         pass:'gQr4jgKqQFfxf5Jm7d'
+//         // testing so, no need to keep in env
+//     }
+// });
 
-const transporter = nodemailer.createTransport({
-    host: 'smtp.ethereal.email',
-    port: 587,
-    secure: false, // true for 465, false for other ports
-    auth: {
-        user:'moshe.morissette@ethereal.email',
-        pass:'gQr4jgKqQFfxf5Jm7d'
-        // testing so, no need to keep in env
-    }
-});
 // for testing purposes we are using ethereal.email
 // const transporter = nodemailer.createTransport({
 //     service: 'gmail', // Use your email service here
@@ -18,6 +20,22 @@ const transporter = nodemailer.createTransport({
 //         pass: process.env.EMAIL_PASS // Your email password
 //     }
 // });
+console.log("EMAIL_USER:", process.env.EMAIL_USER);
+console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "Loaded" : "Missing");
+
+
+// google smtp
+const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    }//,
+    // logger: true,
+    // debug: true
+});
 
 const sendEmail = async (to, subject, html) => {
     const mailOptions = {
@@ -31,7 +49,8 @@ const sendEmail = async (to, subject, html) => {
         const info = await transporter.sendMail(mailOptions);
         // await transporter.sendMail(mailOptions);
         console.log('Email sent:', info.messageId);
-        console.log('Preview URL:', nodemailer.getTestMessageUrl(info));
+        
+        console.log('Preview URL:', nodemailer.getTestMessageUrl(info)); // not needed only needed for Etherial 
 
         // return info; // Return info if controller needs it
     } catch (error) {

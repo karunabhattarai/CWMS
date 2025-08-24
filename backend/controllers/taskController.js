@@ -72,7 +72,8 @@ export const createTask = async (req, res) => {
             name: sub.name,
             role: sub.role,
             description: sub.description || '',
-            estimatedDurationDays: sub.estimatedDurationDays
+            estimatedDurationDays: sub.estimatedDurationDays,
+            status: sub.status || 'Not Started'
           });
         } else {
           return res.status(400).json({
