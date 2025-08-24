@@ -1,70 +1,61 @@
+import { Card, CardHeader, CardTitle, CardActions } from "../common/Card";
+import ProgressBar from "../common/ProgressBar";
+import StatusBadge from "../common/StatusBadge";
+import { AvatarGroup } from "../common/Avatar";
+import { Button } from "../common/Button";
+
 export default function ProjectCard({
   project,
-  subtasks,
   onEdit,
   onDelete,
   onView,
   statusStyles,
   getProjectStatusAndProgress,
 }) {
-  const { status, progress } = getProjectStatusAndProgress(project, subtasks);
+  const { status, progress } = getProjectStatusAndProgress(project);
 
   return (
-    <div className="bg-white rounded-xl shadow border border-green-100 p-6 flex flex-col gap-4 hover:shadow-md transition">
-      <div
-        className="flex items-center justify-between"
-        onClick={() => onView(project._id)}
-      >
-        <span className="text-lg font-bold font-serif text-green-900">
-          {project.name}
-        </span>
-        <span
-          className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${statusStyles[status]}`}
-        >
-          {status}
-        </span>
-      </div>
-      <div>
-        <div className="w-full bg-green-100 rounded-full h-2">
-          <div
-            className="bg-green-500 h-2 rounded-full transition-all"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <div className="text-xs text-green-700 mt-1">{progress}% complete</div>
-      </div>
-      <div className="text-xs text-green-700">
+    <Card hover onClick={() => onView(project._id)}>
+      <CardHeader>
+        <CardTitle>{project.name}</CardTitle>
+        <StatusBadge status={status} statusStyles={statusStyles} />
+      </CardHeader>
+
+      <ProgressBar progress={progress} className="mb-4" />
+
+      <div className="text-xs text-green-700 mb-4">
         Deadline:{" "}
         {project.deadline
           ? new Date(project.deadline).toLocaleDateString()
           : "N/A"}
       </div>
-      <div className="flex -space-x-2">
-        {(project.team || []).map((member, idx) => (
-          <div
-            key={idx}
-            className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center bg-green-100 text-green-800 font-bold text-sm"
-            title={member.name}
-          >
-            {member.name[0]}
-          </div>
-        ))}
-      </div>
 
-      <div className="flex gap-2 mt-2">
-        <button
-          className="px-3 py-1 rounded bg-green-100 text-green-800 text-xs font-semibold hover:bg-green-200 transition"
-          onClick={() => onEdit(project._id)}
+      <AvatarGroup members={project.team || []} className="mb-4" />
+
+      <CardActions>
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(project._id);
+          }}
+          className="bg-green-100 text-green-800 hover:bg-green-200"
         >
           Edit
-        </button>
-        <button
-          className="px-3 py-1 rounded bg-rose-100 text-rose-700 text-xs font-semibold hover:bg-rose-200 transition"
-          onClick={() => onDelete(project._id)}
+        </Button>
+        <Button
+          size="sm"
+          variant="danger"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(project._id);
+          }}
+          className="bg-rose-100 text-rose-700 hover:bg-rose-200"
         >
           Delete
-        </button>
-      </div>
-    </div>
+        </Button>
+      </CardActions>
+    </Card>
   );
 }

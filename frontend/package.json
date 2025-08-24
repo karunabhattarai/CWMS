@@ -7,13 +7,16 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postinstall": "patch-package"
   },
   "dependencies": {
+    "@hello-pangea/dnd": "^18.0.1",
     "@heroicons/react": "^2.2.0",
     "@tailwindcss/vite": "^4.1.10",
     "axios": "^1.10.0",
     "favicon": "^0.0.2",
+    "frappe-gantt-react": "^0.2.2",
     "heroicons": "^2.2.0",
     "jwt-decode": "^4.0.0",
     "react": "^19.1.0",
@@ -31,7 +34,9 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
+    "patch-package": "^8.0.0",
     "postcss": "^8.5.5",
+    "sass-embedded": "^1.89.2",
     "tailwindcss": "^4.1.10",
     "vite": "^6.3.5"
   }

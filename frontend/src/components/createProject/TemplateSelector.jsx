@@ -28,7 +28,6 @@ export default function TemplateSelector({
           ))}
         </select>
       </div>
-
       {template && (
         <div className="border border-green-100 bg-green-50 rounded-lg p-4 overflow-auto max-h-60">
           <div className="font-bold text-green-900 text-base mb-1">
@@ -39,12 +38,37 @@ export default function TemplateSelector({
           </div>
           <ul className="list-disc list-inside text-green-700 text-sm space-y-1">
             {template.subtasks.map((sub, idx) => {
-              const stpl =
-                typeof sub === "string" ? getSubtaskTemplateById(sub) : sub;
+              // Handle the three cases: string, object with subtaskTemplate, fully populated subtask template
+              let subtaskTemplateId = null;
+              let subtaskTemplateData = null;
+
+              if (typeof sub === "string") {
+                // It's just an ObjectId
+                subtaskTemplateId = sub;
+                subtaskTemplateData = getSubtaskTemplateById(subtaskTemplateId);
+              } else if (sub && typeof sub === "object") {
+                if (sub.name && sub.estimatedDurationDays) {
+                  // Already a populated subtask template object
+                  subtaskTemplateData = sub;
+                } else if (sub.subtaskTemplate) {
+                  // It's an object with a reference to a subtask template
+                  subtaskTemplateId = sub.subtaskTemplate;
+                  subtaskTemplateData =
+                    getSubtaskTemplateById(subtaskTemplateId);
+                }
+              }
+
               return (
                 <li key={idx}>
-                  {stpl?.name} ({stpl?.estimatedDurationDays} day
-                  {Number(stpl?.estimatedDurationDays) > 1 ? "s" : ""})
+                  {subtaskTemplateData
+                    ? `${subtaskTemplateData.name} (${
+                        subtaskTemplateData.estimatedDurationDays
+                      } day${
+                        Number(subtaskTemplateData.estimatedDurationDays) > 1
+                          ? "s"
+                          : ""
+                      })`
+                    : "Unknown subtask"}
                 </li>
               );
             })}

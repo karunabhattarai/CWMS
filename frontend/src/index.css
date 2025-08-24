@@ -28,3 +28,13 @@
     animation: slide-in-right 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
+
+/* For all bars */
+.gantt .bar {
+  fill: #22c55e !important; /* e.g., Tailwind's green-500 */
+}
+
+.gantt-critical-task .bar {
+  stroke: #dc2626 !important;
+  fill: #ee7474 !important;
+}

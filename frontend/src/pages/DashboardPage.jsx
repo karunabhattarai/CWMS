@@ -1,15 +1,8 @@
-import { useMemo } from "react";
-import { tasks, subtasks, members, roles } from "../dummyData.jsx";
+import { useState, useEffect, useMemo } from "react";
+import axios from "axios";
 
-// Helper to flatten all subtasks
-function getAllSubtasks() {
-  return subtasks.map((sub) => ({
-    ...sub,
-    project: tasks.find((t) => t._id === sub.task),
-  }));
-}
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
-// Priority badge styling
 const priorityStyles = {
   urgent: "bg-rose-100 text-rose-800 border border-rose-200",
   high: "bg-orange-100 text-orange-800 border border-orange-200",
@@ -18,31 +11,105 @@ const priorityStyles = {
 };
 
 export default function DashboardPage() {
-  // KPI calculations
-  const activeProjects = tasks.filter((t) => t.status !== "Completed").length;
-  const tasksInProgress = subtasks.filter(
-    (s) => s.status === "inprogress"
-  ).length;
-  const overdueSubtasks = getAllSubtasks().filter(
-    (s) => new Date(s.deadline) < new Date() && s.status !== "completed"
-  ).length;
+  const [tasks, setTasks] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      setError("");
+      try {
+        const [taskRes, memberRes] = await Promise.all([
+          axios.get(`${API_BASE}/api/task`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+          axios.get(`${API_BASE}/api/member`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+        ]);
+
+        setTasks(taskRes.data || []);
+        setMembers(memberRes.data || []);
+      } catch (err) {
+        setError(
+          err.response?.data?.message || "Failed to fetch dashboard data"
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
+
+  // Flatten all subtasks for calculations
+  const allSubtasks = useMemo(() => {
+    return tasks.flatMap((task) => {
+      return task.subtasks.map((sub) => ({
+        ...sub,
+        task, // attach parent task for reference
+      }));
+    });
+  }, [tasks]);
+
+  const activeProjects = useMemo(() => {
+    return tasks.filter((t) =>
+      t.subtasks?.some((st) => st.status !== "Completed")
+    ).length;
+  }, [tasks]);
+
+  const tasksInProgress = useMemo(() => {
+    return allSubtasks.filter((s) => s.status === "In Progress").length;
+  }, [allSubtasks]);
+
+  const overdueSubtasks = useMemo(() => {
+    return allSubtasks.filter(
+      (s) =>
+        s.deadline &&
+        new Date(s.deadline) < new Date() &&
+        s.status !== "Completed"
+    ).length;
+  }, [allSubtasks]);
+
   const teamMemberCount = members.length;
 
-  // Upcoming deadlines (next 5)
+  const topProjects = useMemo(() => {
+    const priorityOrder = { urgent: 3, high: 2, moderate: 1, low: 0 };
+    return [...tasks]
+      .sort(
+        (a, b) =>
+          (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0)
+      )
+      .slice(0, 3);
+  }, [tasks]);
+
   const upcomingDeadlines = useMemo(() => {
     return tasks
       .filter((t) => t.deadline && new Date(t.deadline) >= new Date())
       .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
       .slice(0, 5);
-  }, []);
+  }, [tasks]);
 
-  // Project progress (top 3 by priority)
-  const topProjects = useMemo(() => {
-    const priorityOrder = { urgent: 3, high: 2, moderate: 1, low: 0 };
-    return [...tasks]
-      .sort((a, b) => priorityOrder[b.priority] - priorityOrder[a.priority])
-      .slice(0, 3);
-  }, []);
+  if (loading) {
+    return (
+      <div className="text-center py-10 text-green-800 font-serif font-semibold">
+        Loading dashboard...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center text-red-700 font-bold py-10">{error}</div>
+    );
+  }
 
   return (
     <div className="w-full px-4 py-10 bg-[#efeee8] min-h-screen">
@@ -74,20 +141,28 @@ export default function DashboardPage() {
                   {project.name}
                 </span>
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    priorityStyles[project.priority]
+                  className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${
+                    priorityStyles[project.priority] || ""
                   }`}
                 >
-                  {project.priority}
+                  {project.priority || "unknown"}
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-green-700">Status:</span>
-                <span className="capitalize">{project.status}</span>
+                <span className="capitalize">
+                  {project.subtasks?.every((st) => st.status === "Completed")
+                    ? "Completed"
+                    : "In Progress"}
+                </span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-green-700">Deadline:</span>
-                <span>{new Date(project.deadline).toLocaleDateString()}</span>
+                <span>
+                  {project.deadline
+                    ? new Date(project.deadline).toLocaleDateString()
+                    : "N/A"}
+                </span>
               </div>
             </div>
           ))}
@@ -100,22 +175,21 @@ export default function DashboardPage() {
           Upcoming Deadlines
         </h2>
         <ul className="bg-white rounded-xl shadow border border-green-100 divide-y divide-green-50">
-          {upcomingDeadlines.length === 0 && (
+          {upcomingDeadlines.length === 0 ? (
             <li className="p-4 text-green-700">No upcoming deadlines.</li>
-          )}
-          {upcomingDeadlines.map((task) => (
-            <li
-              key={task._id}
-              className="p-4 flex items-center justify-between hover:bg-green-50"
-            >
-              <div>
+          ) : (
+            upcomingDeadlines.map((task) => (
+              <li
+                key={task._id}
+                className="p-4 flex items-center justify-between hover:bg-green-50"
+              >
                 <span className="font-semibold">{task.name}</span>
-              </div>
-              <div className="text-xs text-green-700">
-                {new Date(task.deadline).toLocaleDateString()}
-              </div>
-            </li>
-          ))}
+                <span className="text-xs text-green-700">
+                  {new Date(task.deadline).toLocaleDateString()}
+                </span>
+              </li>
+            ))
+          )}
         </ul>
       </div>
 
@@ -135,7 +209,7 @@ export default function DashboardPage() {
                 {member.name}
               </div>
               <div className="text-xs text-green-600 text-center">
-                {roles.find((r) => r._id === member.roles[0])?.name}
+                {member.role?.name || "N/A"}
               </div>
             </div>
           ))}
