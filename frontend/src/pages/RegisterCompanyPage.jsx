@@ -1,6 +1,6 @@
 import { useLocation, Navigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 import axios from "axios";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -39,7 +39,7 @@ export default function RegisterCompanyPage() {
         }
       );
       setUser({ ...res.data, isAuthenticated: true, token });
-    } catch (e) {
+    } catch {
       setError("Profile update failed");
     }
   };

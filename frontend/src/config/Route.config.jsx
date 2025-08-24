@@ -2,6 +2,8 @@ import LandingPage from "../pages/LandingPage";
 import AuthPage from "../pages/AuthPage";
 import OnboardingPage from "../pages/OnboardingPage";
 import DashboardPage from "../pages/DashboardPage";
+import ReportsPage from "../pages/ReportsPage";
+import SettingsPage from "../pages/SettingsPage";
 
 import DashboardLayout from "../layouts/DashboardLayout";
 import PublicLayout from "../layouts/PublicLayout";
@@ -13,20 +15,18 @@ import MembersPage from "../pages/MembersPage";
 import RegisterCompanyPage from "../pages/RegisterCompanyPage";
 import ProtectedRoute from "../components/ProtectedRoute";
 import CompanyGuardedRoute from "../components/CompanyGuardedRoute";
+import AuthRedirectRoute from "../components/AuthRedirectRoute";
 import TaskDetailsPage from "../pages/TaskDetailsPage";
-
-const ReportsPage = () => <div className="p-8">Reports Page</div>;
-const SettingsPage = () => <div className="p-8">Settings Page</div>;
 
 export const routes = [
   {
     path: "/",
     element: (
-      <>
+      <AuthRedirectRoute>
         <PublicLayout>
           <LandingPage />
         </PublicLayout>
-      </>
+      </AuthRedirectRoute>
     ),
   },
   {
@@ -65,65 +65,81 @@ export const routes = [
   {
     path: "/dashboard",
     element: (
-      <DashboardLayout>
-        <DashboardPage />
-      </DashboardLayout>
+      <ProtectedRoute>
+        <DashboardLayout>
+          <DashboardPage />
+        </DashboardLayout>
+      </ProtectedRoute>
     ),
   },
   {
     path: "/reports",
     element: (
-      <DashboardLayout>
-        <ReportsPage />
-      </DashboardLayout>
+      <ProtectedRoute>
+        <DashboardLayout>
+          <ReportsPage />
+        </DashboardLayout>
+      </ProtectedRoute>
     ),
   },
   {
     path: "/members",
     element: (
-      <DashboardLayout>
-        <MembersPage />
-      </DashboardLayout>
+      <ProtectedRoute>
+        <DashboardLayout>
+          <MembersPage />
+        </DashboardLayout>
+      </ProtectedRoute>
     ),
   },
   {
     path: "/roles",
     element: (
-      <DashboardLayout>
-        <RolesPage />
-      </DashboardLayout>
+      <ProtectedRoute>
+        <DashboardLayout>
+          <RolesPage />
+        </DashboardLayout>
+      </ProtectedRoute>
     ),
   },
   {
     path: "/projects",
     element: (
-      <DashboardLayout>
-        <ProjectsPage />
-      </DashboardLayout>
+      <ProtectedRoute>
+        <DashboardLayout>
+          <ProjectsPage />
+        </DashboardLayout>
+      </ProtectedRoute>
     ),
   },
   {
     path: "/createproject",
     element: (
-      <DashboardLayout>
-        <CreateProjectPage />
-      </DashboardLayout>
+      <ProtectedRoute>
+        <DashboardLayout>
+          <CreateProjectPage />
+        </DashboardLayout>
+      </ProtectedRoute>
     ),
   },
   {
     path: "/projects/:taskId",
     element: (
-      <DashboardLayout>
-        <TaskDetailsPage />
-      </DashboardLayout>
+      <ProtectedRoute>
+        <DashboardLayout>
+          <TaskDetailsPage />
+        </DashboardLayout>
+      </ProtectedRoute>
     ),
   },
   {
     path: "/settings",
     element: (
-      <DashboardLayout>
-        <SettingsPage />
-      </DashboardLayout>
+      <ProtectedRoute>
+        <DashboardLayout>
+          <SettingsPage />
+        </DashboardLayout>
+      </ProtectedRoute>
     ),
   },
 ];
