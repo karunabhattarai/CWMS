@@ -178,7 +178,7 @@ export default function AuthForm({
           }));
 
           setTimeout(() => {
-            window.location.href = "/auth";
+            window.location.href = "/login";
           }, 3000);
           break;
         }

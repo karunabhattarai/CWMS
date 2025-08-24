@@ -49,6 +49,8 @@ export function AuthProvider({ children }) {
       if (isTokenExpired(token)) {
         localStorage.removeItem("token");
         setUser(null);
+        // Redirect to login if token expired
+        window.location.href = "/login";
       } else {
         try {
           const decoded = jwtDecode(token);
@@ -60,10 +62,24 @@ export function AuthProvider({ children }) {
         } catch {
           localStorage.removeItem("token");
           setUser(null);
+          window.location.href = "/login";
         }
       }
     }
     setLoading(false);
+  }, []);
+
+  // Check token expiration every 1 minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const token = localStorage.getItem("token");
+      if (token && isTokenExpired(token)) {
+        logout();
+        window.location.href = "/login";
+      }
+    }, 60000); // 1 minute
+
+    return () => clearInterval(interval);
   }, []);
 
   // Login only expects a token string
