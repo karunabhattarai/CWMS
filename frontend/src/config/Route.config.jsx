@@ -1,5 +1,6 @@
 import LandingPage from "../pages/LandingPage";
 import AuthPage from "../pages/AuthPage";
+import ResetPasswordPage from "../pages/ResetPasswordPage";
 import OnboardingPage from "../pages/OnboardingPage";
 import DashboardPage from "../pages/DashboardPage";
 import ReportsPage from "../pages/ReportsPage";
@@ -35,6 +36,16 @@ export const routes = [
       <>
         <PublicLayout>
           <AuthPage />
+        </PublicLayout>
+      </>
+    ),
+  },
+  {
+    path: "/reset-password",
+    element: (
+      <>
+        <PublicLayout>
+          <ResetPasswordPage />
         </PublicLayout>
       </>
     ),
