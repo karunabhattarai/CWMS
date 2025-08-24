@@ -1,5 +1,11 @@
 import Member from '../models/Member.js';
 
+export const createMemberInternal = async ({ name, email, roles, company }) => {
+  const member = new Member({ name, email, roles, company });
+  return await member.save();
+};
+// upper helper user bata call garna ko lagi, did not want to del talako, not needed hunalai
+
 export const createMember = async (req, res) => {
   try {
     const { name, email, roles } = req.body;
@@ -9,8 +15,7 @@ export const createMember = async (req, res) => {
       return res.status(400).json({ message: 'User has no company assigned' });
     }
 
-    const member = new Member({ name, email, roles, company });
-    await member.save();
+    const member = await createMemberInternal({ name, email, roles, company });
     res.status(201).json(member);
   } catch (error) {
     res.status(500).json({ message: 'Internal server error', error: error.message });

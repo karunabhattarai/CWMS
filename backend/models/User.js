@@ -23,17 +23,26 @@ const userSchema = new mongoose.Schema({
   },
   role:{
     type : String,
-    enum: ['superadmin', 'manager'],
+    enum: ['superadmin', 'manager', 'employee'],
     required: true,
-    default: 'manager' // option dinu pardaina frontendma, just have for superdmin and give superadmin power to make manager
+    default: 'employee' // option dinu pardaina frontendma, just have for superdmin and give superadmin power to make manager,and users
+
   },
   company: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Company',
     // required: true since super admin is also added, he can exist witour coompany
     required: function() {
-      // company is required for managers only, not for superadmin
-      return this.role === 'manager';
+      // company is required for managers and employees only, not for superadmin
+      return this.role === 'manager'|| this.role === 'employee';
+    }
+  },
+  member: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Member',
+    required: function () {
+      // required for employee, optional for superadmin
+      return this.role === 'employee';
     }
   },
   isVerified: {
