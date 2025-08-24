@@ -1,127 +1,109 @@
 import User from "../models/User.js";
+import { createMemberInternal } from './memberController.js';
+import Member from "../models/Member.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import sendEmail from "../utils/sendEmail.js"; // Assuming you have a utility to send emails
 
-// register superadmin and manager
-export const registerSuperAdmin = async (req, res) => {
+//mixing sabko manager and employee into one registerUser
+
+export const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
-    // Check if all fields are provided
+    const { name, email, password, role, memberRoles } = req.body; // memberRoles only for employee
+    const company = req.user?.company || null; // company for manager and employee
+
+    // const requesterRole = req.user?.role;
+
+    // if (role === 'manager' && requesterRole !== 'superadmin') {
+    //   return res.status(403).json({ message: 'Only superadmin can create managers' });
+    // }
+
+    // if (role === 'employee' && !['superadmin', 'manager'].includes(requesterRole)) {
+    //   return res.status(403).json({ message: 'Only superadmin or manager can create employees' });
+    // }
+
+    // Validate required fields
+    if (!name || !email || !role) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    // Check if user already exists
     const existing = await User.findOne({ email });
     if (existing) {
-      return res.status(400).json({ message: "user already exists" });
+      return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Create new user
-    //const hashedPassword = await bcrypt.hash(password, 10); // modelma hashed xa
-    //console.log("Hashed password stored:", hashedPassword);
+    // Set default password if not provided (for manager and employee)
+    const userPassword = password || '123456';
 
-    // create token
-    const token = crypto.randomBytes(32).toString("hex"); // Generate a random token
+    // Create verification token
+    const token = crypto.randomBytes(32).toString('hex');
 
-    const newSuperAdmin = new User({
+    // Prepare new user data
+    const newUserData = {
       name,
       email,
-      password,
-      role: "superadmin", // Set role to superadmin
-      isVerified: false, // default value
+      password: userPassword, // will be hashed in model
+      role,
+      isVerified: false,
       verificationToken: token,
-    });
-    await newSuperAdmin.save();
+    };
+
+    if (role === 'manager' || role === 'employee') {
+      if (!company) {
+        return res.status(400).json({ message: 'Your user does not have a company assigned' });
+      }
+      newUserData.company = company;
+    }
+
+    // If employee,and memberId is present then update the member and else create the member
+    if (role === 'employee') {
+      if (req.body.memberId) {
+        // Update existing member
+        const member = await Member.findOne({ _id: req.body.memberId, company });
+        if (!member) {
+          return res.status(404).json({ message: 'Member not found' });
+        }
+        member.name = name || member.name;
+        member.email = email || member.email;
+        if (memberRoles) member.roles = memberRoles;
+        await member.save();
+        newUserData.member = member._id;
+      } else {
+        // Create new member
+        const member = await createMemberInternal({
+          name,
+          email,
+          roles: memberRoles || [],
+          company,
+        });
+        newUserData.member = member._id;
+      }
+    }
+
+    // Save user
+    const newUser = new User(newUserData);
+    await newUser.save();
 
     // Send verification email
     const verifyLink = `${process.env.BACKEND_URL}/api/user/verify-email?token=${token}`;
     const message = `
-        <h1>Email Verification</h1>
-        <p>Please click the link below to verify your email:</p>
-        <a href="${verifyLink}">Verify Email</a> 
-        `;
+      <h1>Email Verification</h1>
+      <p>Please click the link below to verify your email:</p>
+      <a href="${verifyLink}">Verify Email</a>
+    `;
+    await sendEmail(email, 'Verify your email', message);
 
-    await sendEmail(email, "Verify your email", message);
+    // Send response
+    const msg = `${role.charAt(0).toUpperCase() + role.slice(1)} registered successfully. Email verification link sent to email.`;
 
-    // console.log("Preview URL: ", nodemailer.getTestMessageUrl(info));
 
-    res
-      .status(201)
-      .json({
-        message:
-          "SuperAdmin registered successfully. Please check your email to verify your account.",
-      });
+    res.status(201).json({ message: msg, user: newUser });
+
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Internal server error", error: error.message });
-  }
-};
-
-export const registerManager = async (req, res) => {
-  try {
-    const { name, email } = req.body;
-    // Check if all fields are
-
-    if (!name || !email) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
-
-    //check company exists or not
-    const company = req.user.company; // Assuming the company is set in the request by auth middleware
-    console.log("Registering manager under company:", company);
-    if (!company) {
-      return res
-        .status(400)
-        .json({ message: "Your user does not have a company assigned" });
-    }
-
-    // seprate company check parxa kinai no idea
-    const existing = await User.findOne({ email }); //
-    if (existing) {
-      return res.status(400).json({ message: " Manager already exists" });
-    }
-    // password is not required for manager registration dummy will be set at first
-    const password = "123456"; // Set a dummy password for manager registration
-
-    //hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    //create token for verification
-    const token = crypto.randomBytes(32).toString("hex"); // Generate a random token
-    //create manager
-    const newManager = new User({
-      name,
-      email,
-      // password: hashedPassword, // not necessary to hash again, will be hashed in models
-      password, // password will be hashed in the User model pre-save hook
-      company,
-      role: "manager",
-      isVerified: false, // default value
-      verificationToken: token,
-      // send email Please verify your account: https://yourapp.com/verify?token=abc123
-    });
-
-    await newManager.save();
-
-    // Send verification email
-    const verifyLink = `${process.env.BACKEND_URL}/api/user/verify-email?token=${token}`;
-    const message = `
-        <h1>Email Verification</h1>
-        <p>Please click the link below to verify your email:</p>
-        <a href="${verifyLink}">Verify Email</a>
-        `;
-    await sendEmail(email, "Verify your email", message);
-    // console.log("Preview URL: ", nodemailer.getTestMessageUrl(info));
-
-    res
-      .status(201)
-      .json({
-        message:
-          "Manager registered successfully. Email Verification Link sent to email",
-      });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Internal server error", error: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
 
