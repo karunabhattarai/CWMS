@@ -1,124 +1,227 @@
 import { useState, useEffect } from "react";
-
-const EMPTY_PROJECT = {
-  name: "",
-  subparts: [{ name: "", days: 1, role: "" }],
-};
+import axios from "axios";
+import {
+  API_BASE,
+  getAuthHeaders,
+  saveDraft,
+  loadDraft,
+  validateRequired,
+} from "../../utils/onboardingUtils";
+import {
+  OnboardingContainer,
+  OnboardingNavigation,
+  ErrorMessage,
+} from "./OnboardingUI";
 
 export default function OnboardingProjectStep({
   project,
   setProject,
   onNext,
   onBack,
-  roles = [], // Pass roles as a prop!
+  roles = [],
 }) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [subtasks, setSubtasks] = useState([
+    { name: "", estimatedDurationDays: 1, role: roles[0]?._id || "" },
+  ]);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
+  // Initialize from project prop only once
   useEffect(() => {
-    if (!project || !project.name) setProject(EMPTY_PROJECT);
-    // eslint-disable-next-line
-  }, []);
+    if (project && project.name && !name) {
+      setName(project.name);
+      setDescription(project.description || "");
+      if (project.subparts && project.subparts.length > 0) {
+        setSubtasks(
+          project.subparts.map((sub) => ({
+            name: sub.name,
+            estimatedDurationDays: sub.days || sub.estimatedDurationDays || 1,
+            role: sub.role || roles[0]?._id || "",
+          }))
+        );
+      }
+    } else if (!project || !project.name) {
+      // Initialize with empty state if no project
+      if (!name) setName("");
+      if (!description) setDescription("");
+      if (subtasks.length === 0) {
+        setSubtasks([
+          { name: "", estimatedDurationDays: 1, role: roles[0]?._id || "" },
+        ]);
+      }
+    }
+  }, [project, roles, name, description, subtasks.length]);
 
-  const handleSubpartChange = (idx, field, value) => {
-    const updated = { ...project };
-    updated.subparts[idx][field] = field === "days" ? Number(value) : value;
-    setProject(updated);
-  };
+  function handleSubtaskChange(idx, field, value) {
+    setSubtasks((prev) =>
+      prev.map((s, i) => (i === idx ? { ...s, [field]: value } : s))
+    );
+  }
 
-  const addSubpart = () => {
-    setProject({
-      ...project,
-      subparts: [...project.subparts, { name: "", days: 1, role: "" }],
-    });
-  };
+  function handleAddSubtask() {
+    setSubtasks((prev) => [
+      ...prev,
+      { name: "", estimatedDurationDays: 1, role: roles[0]?._id || "" },
+    ]);
+  }
 
-  const removeSubpart = (idx) => {
-    if (project.subparts.length === 1) return;
-    setProject({
-      ...project,
-      subparts: project.subparts.filter((_, i) => i !== idx),
-    });
-  };
+  function handleRemoveSubtask(idx) {
+    if (subtasks.length === 1) return;
+    setSubtasks((prev) => prev.filter((_, i) => i !== idx));
+  }
 
   const validate = () => {
-    if (!project.name.trim()) return "Project name is required.";
-    if (!project.subparts.length) return "At least one subpart is required.";
-    for (let s of project.subparts) {
-      if (!s.name.trim()) return "Each subpart must have a name.";
-      if (!s.days || s.days < 1)
-        return "Each subpart must have at least 1 day.";
-      if (!s.role) return "Each subpart must have a role assigned.";
+    const nameError = validateRequired(name, "Template name");
+    if (nameError) return nameError;
+
+    if (subtasks.length === 0) return "At least one subtask is required.";
+    for (const sub of subtasks) {
+      const subNameError = validateRequired(sub.name, "Subtask name");
+      if (subNameError) return subNameError;
+
+      if (!sub.estimatedDurationDays || !sub.role) {
+        return "All subtasks must have name, duration, and role.";
+      }
     }
     return "";
   };
 
-  const handleNext = () => {
+  async function handleNext() {
     const err = validate();
     if (err) {
       setError(err);
       return;
     }
+
     setError("");
-    onNext();
-  };
+    setSaving(true);
+
+    try {
+      // Create all subtasks as subtask templates first
+      const subpartIds = [];
+      for (const sub of subtasks) {
+        const subRes = await axios.post(
+          `${API_BASE}/api/subtask-template`,
+          {
+            name: sub.name,
+            role: sub.role,
+            estimatedDurationDays: sub.estimatedDurationDays,
+          },
+          getAuthHeaders()
+        );
+        subpartIds.push({
+          subtaskTemplate: subRes.data._id,
+        });
+      }
+
+      // Now create the template linking those subtasks
+      const tplRes = await axios.post(
+        `${API_BASE}/api/task-template`,
+        {
+          name,
+          description,
+          subtasks: subpartIds,
+        },
+        getAuthHeaders()
+      );
+
+      // Save project data to localStorage draft
+      const projectData = {
+        name,
+        description,
+        subparts: subtasks.map((sub) => ({
+          name: sub.name,
+          days: sub.estimatedDurationDays,
+          role: sub.role,
+        })),
+        _id: tplRes.data._id,
+        saved: true,
+      };
+
+      const allData = loadDraft();
+      allData.project = projectData;
+      saveDraft(allData);
+
+      // Update project with the saved template data
+      setProject(projectData);
+
+      console.log("Project template saved:", projectData);
+      onNext();
+    } catch (error) {
+      console.error("Error saving project template:", error);
+      setError(error.response?.data?.message || "Failed to save template");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
-    <div className="w-full max-w-xl mx-auto bg-white rounded-2xl shadow-lg p-6 sm:p-8">
+    <OnboardingContainer>
       <h2 className="text-2xl font-bold font-serif text-cyan-900 mb-2">
-        Project Template
+        Create Project Template
       </h2>
       <p className="text-cyan-800 font-sans mb-6">
-        Set up a project template with subparts, assign roles, and estimated
-        durations.
+        Set up a reusable project template with subtasks, assign roles, and
+        estimated durations.
       </p>
-      <div className="mb-6">
-        <label className="block text-cyan-900 font-sans mb-2 font-semibold">
-          Project Name
-        </label>
-        <input
-          type="text"
-          className="w-full px-4 py-3 rounded-xl border border-cyan-200 focus:ring-2 focus:ring-green-500 font-sans text-lg"
-          value={project.name}
-          onChange={(e) => setProject({ ...project, name: e.target.value })}
-          placeholder="e.g. TNC Townhall"
-          autoComplete="off"
-        />
+
+      <div className="space-y-6">
+        <div>
+          <label className="block text-cyan-900 font-sans mb-2 font-semibold">
+            Template Name
+          </label>
+          <input
+            type="text"
+            className="w-full px-4 py-3 rounded-xl border border-cyan-200 focus:ring-2 focus:ring-green-500 font-sans text-lg"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Website Development Project"
+            autoComplete="off"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-cyan-900 font-sans mb-2 font-semibold">
+            Description (Optional)
+          </label>
+          <textarea
+            rows={3}
+            className="w-full px-4 py-3 rounded-xl border border-cyan-200 focus:ring-2 focus:ring-green-500 font-sans"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Brief description of this template"
+          />
+        </div>
       </div>
-      <div>
-        <div className="font-semibold text-cyan-900 mb-2 text-sm">Subparts</div>
+
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold text-cyan-900 mb-4">Subtasks</h3>
         <div className="space-y-3">
-          {project.subparts.map((sub, idx) => (
+          {subtasks.map((sub, idx) => (
             <div
               key={idx}
-              className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-[#efeee8] rounded-xl p-3"
+              className="bg-[#efeee8] rounded-xl p-4 grid grid-cols-1 md:grid-cols-[2fr_1.5fr_1fr_auto] gap-3 items-center"
             >
               <input
                 type="text"
-                className="flex-1 px-3 py-2 rounded-xl border border-cyan-200 font-sans"
+                className="w-full px-3 py-2 rounded-xl border border-cyan-200 focus:ring-2 focus:ring-green-500 font-sans"
+                placeholder="Subtask name"
                 value={sub.name}
                 onChange={(e) =>
-                  handleSubpartChange(idx, "name", e.target.value)
+                  handleSubtaskChange(idx, "name", e.target.value)
                 }
-                placeholder={`Subpart #${idx + 1} Name`}
-                autoComplete="off"
-              />
-              <input
-                type="number"
-                min={1}
-                className="w-full sm:w-24 px-3 py-2 rounded-xl border border-cyan-200 font-sans"
-                value={sub.days}
-                onChange={(e) =>
-                  handleSubpartChange(idx, "days", e.target.value)
-                }
-                placeholder="Days"
-                autoComplete="off"
+                required
               />
               <select
-                className="w-full sm:w-40 px-3 py-2 rounded-xl border border-cyan-200 font-sans"
+                className="w-full px-3 py-2 rounded-xl border border-cyan-200 focus:ring-2 focus:ring-green-500 font-sans"
                 value={sub.role}
                 onChange={(e) =>
-                  handleSubpartChange(idx, "role", e.target.value)
+                  handleSubtaskChange(idx, "role", e.target.value)
                 }
+                required
               >
                 <option value="">Assign Role</option>
                 {roles.map((role) => (
@@ -127,44 +230,60 @@ export default function OnboardingProjectStep({
                   </option>
                 ))}
               </select>
-              {project.subparts.length > 1 && (
-                <button
-                  className="sm:ml-1 text-red-400 hover:bg-red-50 rounded-full p-2 transition self-start sm:self-auto"
-                  onClick={() => removeSubpart(idx)}
-                  title="Remove subpart"
-                  type="button"
-                >
-                  &times;
-                </button>
-              )}
+              <select
+                className="w-full px-3 py-2 rounded-xl border border-cyan-200 focus:ring-2 focus:ring-green-500 font-sans"
+                value={sub.estimatedDurationDays}
+                onChange={(e) =>
+                  handleSubtaskChange(
+                    idx,
+                    "estimatedDurationDays",
+                    Number(e.target.value)
+                  )
+                }
+                required
+              >
+                {[...Array(14).keys()].map((i) => {
+                  const day = i + 1;
+                  return (
+                    <option key={day} value={day}>
+                      {day} day{day > 1 ? "s" : ""}
+                    </option>
+                  );
+                })}
+              </select>
+              <button
+                type="button"
+                className="text-red-500 hover:bg-red-50 rounded-full p-2 transition"
+                onClick={() => handleRemoveSubtask(idx)}
+                disabled={subtasks.length === 1}
+                title="Remove subtask"
+              >
+                ×
+              </button>
             </div>
           ))}
         </div>
         <button
+          type="button"
           className="mt-4 text-green-700 font-medium underline hover:text-green-900"
-          onClick={addSubpart}
-          type="button"
+          onClick={handleAddSubtask}
         >
-          + Add Subpart
+          + Add Subtask
         </button>
       </div>
-      {error && <div className="text-red-600 text-sm mt-4">{error}</div>}
-      <div className="flex flex-col sm:flex-row justify-between mt-10 gap-2">
-        <button
-          className="bg-cyan-100 text-cyan-900 px-6 py-2 rounded-xl font-medium font-sans hover:bg-cyan-200 transition"
-          onClick={onBack}
-          type="button"
-        >
-          Back
-        </button>
-        <button
-          className="bg-orange-800 text-white px-8 py-2 rounded-xl font-semibold font-sans hover:bg-green-600 transition"
-          onClick={handleNext}
-          type="button"
-        >
-          Next
-        </button>
-      </div>
-    </div>
+
+      <ErrorMessage error={error} />
+
+      <OnboardingNavigation
+        onPrevious={onBack}
+        onNext={handleNext}
+        onSkip={null}
+        nextLabel={saving ? "Saving Template..." : "Next: Review"}
+        previousLabel="← Back to Members"
+        nextDisabled={saving}
+        showSkip={false}
+        loading={saving}
+      />
+    </OnboardingContainer>
   );
 }

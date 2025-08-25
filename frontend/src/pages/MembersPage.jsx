@@ -57,7 +57,12 @@ export default function MembersPage() {
   }, []);
 
   const handleAddMember = (newMember) => {
-    setMembers((prev) => [...prev, newMember]);
+    if (newMember) {
+      setMembers((prev) => [...prev, newMember]);
+    } else {
+      // If newMember is null, refresh the entire list
+      fetchData();
+    }
     setShowAddModal(false);
   };
 

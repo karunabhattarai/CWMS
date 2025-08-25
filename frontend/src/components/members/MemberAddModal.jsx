@@ -27,13 +27,33 @@ export default function MemberAddModal({ onClose, onMemberAdded, roles }) {
     }
 
     try {
-      const result = await post("/api/member", {
-        name,
-        email,
-        roles: selectedRoles,
-      });
-      onMemberAdded(result);
-      onClose();
+      // First try to register the user (for new users, this will send verification email)
+      try {
+        await post("/api/user/register", {
+          name,
+          email,
+          role: "employee",
+          memberRoles: selectedRoles,
+        });
+
+        // If user registration succeeds, fetch updated members to get the new member
+        // The member was created automatically by registerUser
+        onMemberAdded(null); // Trigger refresh
+        onClose();
+      } catch (userError) {
+        if (userError.message.includes("User already exists")) {
+          // User exists, just create/update member record
+          const result = await post("/api/member", {
+            name,
+            email,
+            roles: selectedRoles,
+          });
+          onMemberAdded(result);
+          onClose();
+        } else {
+          throw userError;
+        }
+      }
     } catch {
       // Error handled by useApi hook
     }
