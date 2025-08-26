@@ -141,7 +141,7 @@ export default function AuthForm({
               role: "superadmin",
             }
           );
-
+          alert("Email sent for verification. Please verify first to continue");
           setMessage(
             response.data.message ||
               "Registration successful! Please check your email for verification."
