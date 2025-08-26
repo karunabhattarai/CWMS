@@ -40,13 +40,6 @@ export default function TaskDetailsPage() {
         setTask(taskRes.data);
         setSubtasks(subtasksRes.data);
 
-        // Debug logging
-        console.log("Fetched task:", taskRes.data);
-        console.log("Fetched subtasks:", subtasksRes.data);
-        console.log(
-          "Sample subtask assignedMember:",
-          subtasksRes.data[0]?.assignedMember
-        );
       } catch (err) {
         setError(
           err.response?.data?.message || err.message || "Failed to fetch data"

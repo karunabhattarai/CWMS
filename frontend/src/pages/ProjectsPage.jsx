@@ -55,7 +55,6 @@ export default function ProjectsPage() {
             Authorization: `Bearer ${token}`,
           },
         });
-        console.log(res.data);
         setTasks(res.data);
       } catch (e) {
         setError(

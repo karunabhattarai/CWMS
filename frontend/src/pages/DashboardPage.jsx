@@ -69,7 +69,7 @@ export default function DashboardPage() {
     // Optionally refresh members list or show a success message
     if (newManager) {
       // You could add the new manager to the members list if needed
-      console.log("New manager created:", newManager);
+      console.log("New manager created:");
     }
   };
 
