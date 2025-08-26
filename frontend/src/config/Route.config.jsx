@@ -2,16 +2,13 @@ import LandingPage from "../pages/LandingPage";
 import AuthPage from "../pages/AuthPage";
 import ResetPasswordPage from "../pages/ResetPasswordPage";
 import OnboardingPage from "../pages/OnboardingPage";
-import DashboardPage from "../pages/DashboardPage";
-import EmployeeDashboard from "../pages/EmployeeDashboard";
 import ReportsPage from "../pages/ReportsPage";
 import SettingsPage from "../pages/SettingsPage";
+import NotificationsPage from "../pages/NotificationsPage";
 
 import DashboardLayout from "../layouts/DashboardLayout";
 import PublicLayout from "../layouts/PublicLayout";
 
-import ProjectsPage from "../pages/ProjectsPage";
-import EmployeeProjects from "../pages/EmployeeProjects";
 import SmartDashboard from "../components/SmartDashboard";
 import SmartProjects from "../components/SmartProjects";
 import EmployeeKanban from "../pages/EmployeeKanban";
@@ -131,6 +128,17 @@ export const routes = [
       <ProtectedRoute>
         <DashboardLayout>
           <SmartProjects />
+        </DashboardLayout>
+      </ProtectedRoute>
+    ),
+  },
+
+  {
+    path: "/notifications",
+    element: (
+      <ProtectedRoute>
+        <DashboardLayout>
+          <NotificationsPage />
         </DashboardLayout>
       </ProtectedRoute>
     ),
