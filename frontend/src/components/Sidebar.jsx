@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { useNotifications } from "../hooks/useNotifications";
 import {
   HomeIcon,
   ChartBarIcon,
@@ -12,6 +13,7 @@ import {
   Bars3Icon,
   XMarkIcon,
   ViewColumnsIcon,
+  BellIcon,
 } from "@heroicons/react/24/outline";
 
 // Define navigation items with role restrictions
@@ -22,6 +24,13 @@ const getNavItems = (userRole) => {
       to: "/dashboard",
       icon: HomeIcon,
       roles: ["superadmin", "manager", "employee"],
+    },
+    {
+      label: "Notifications",
+      to: "/notifications",
+      icon: BellIcon,
+      roles: ["superadmin", "manager", "employee"],
+      showBadge: true,
     },
   ];
 
@@ -83,6 +92,7 @@ const getNavItems = (userRole) => {
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
+  const { unreadCount } = useNotifications();
 
   const navItems = getNavItems(user?.role || "employee");
 
@@ -123,7 +133,7 @@ export default function Sidebar() {
               key={item.label}
               to={item.to}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 rounded-xl font-sans text-green-900 hover:bg-green-100 hover:shadow-sm transition-all duration-200
+                `flex items-center justify-between gap-3 px-4 py-3 rounded-xl font-sans text-green-900 hover:bg-green-100 hover:shadow-sm transition-all duration-200
                 ${
                   isActive
                     ? "bg-green-200 font-semibold shadow-sm border-l-4 border-green-600"
@@ -132,8 +142,15 @@ export default function Sidebar() {
               }
               onClick={() => setOpen(false)}
             >
-              <item.icon className="w-5 h-5 text-green-700" />
-              <span className="text-sm">{item.label}</span>
+              <div className="flex items-center gap-3">
+                <item.icon className="w-5 h-5 text-green-700" />
+                <span className="text-sm">{item.label}</span>
+              </div>
+              {item.showBadge && unreadCount > 0 && (
+                <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full min-w-[20px] text-center">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>

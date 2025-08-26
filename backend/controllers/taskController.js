@@ -7,6 +7,7 @@ import SubtaskTemplate from "../models/SubtaskTemplate.js";
 import Member from "../models/Member.js";
 import mongoose from "mongoose";
 import { assignSubtaskDependencies } from "./subtaskController.js";
+import { sendNotification } from "../services/notificationService.js";
 
 // import { resolveSubtaskDependenciesByName } from '../algorithms/cpm.js';
 
@@ -439,6 +440,41 @@ export const createTask = async (req, res) => {
     } catch (error) {
       console.error("Warning: Failed to run CPM scheduling:", error.message);
       // Don't fail the entire task creation if scheduling fails
+    }
+
+    // Send notifications to assigned members
+    try {
+      const assignedMembers = [];
+      for (const subtask of finalSubtasks) {
+        if (subtask.assignedMember) {
+          // Get member details to find user ID
+          const member = await Member.findById(subtask.assignedMember).populate(
+            "user"
+          );
+          if (member && member.user) {
+            assignedMembers.push(member.user._id);
+          }
+        }
+      }
+
+      // Send notification if there are assigned members
+      if (assignedMembers.length > 0) {
+        const uniqueMembers = [
+          ...new Set(assignedMembers.map((id) => id.toString())),
+        ];
+        await sendNotification({
+          recipients: uniqueMembers,
+          message: `You have been assigned to task: "${task.name}"`,
+          redirectTo: `/tasks/${task._id}`,
+          type: "info",
+        });
+      }
+    } catch (error) {
+      console.error(
+        "Warning: Failed to send task assignment notifications:",
+        error.message
+      );
+      // Don't fail the entire task creation if notifications fail
     }
 
     // Return success response with warnings if any
