@@ -5,10 +5,31 @@ import Subtask from "../models/Subtask.js";
 import Task from "../models/Task.js";
 import Company from "../models/Company.js";
 
+// Helper function to ensure member exists for employee
+const ensureMemberExists = async (user) => {
+  if (!user.member && user.role === "employee") {
+    // Create a member record for this employee if it doesn't exist
+    const member = new Member({
+      name: user.name,
+      email: user.email,
+      company: user.company,
+      roles: [], // Default empty roles, can be updated later
+    });
+    await member.save();
+
+    // Update user with member reference
+    user.member = member._id;
+    await user.save();
+
+    return member;
+  }
+  return user.member;
+};
+
 // Get employee dashboard data
 export const getEmployeeDashboard = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user._id;
     const user = await User.findById(userId)
       .populate("member")
       .populate("company", "name")
@@ -20,13 +41,35 @@ export const getEmployeeDashboard = async (req, res) => {
         },
       });
 
-    if (!user || !user.member) {
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Ensure member exists for employee
+    let member = user.member;
+    if (!member && user.role === "employee") {
+      member = await ensureMemberExists(user);
+      // Refetch user with populated member
+      const updatedUser = await User.findById(userId)
+        .populate("member")
+        .populate("company", "name")
+        .populate({
+          path: "member",
+          populate: {
+            path: "roles",
+            select: "name",
+          },
+        });
+      member = updatedUser.member;
+    }
+
+    if (!member) {
       return res
         .status(404)
         .json({ message: "Employee member record not found" });
     }
 
-    const memberId = user.member._id;
+    const memberId = member._id;
 
     // Get subtask statistics
     const subtaskStats = await Subtask.aggregate([
@@ -73,8 +116,8 @@ export const getEmployeeDashboard = async (req, res) => {
       employee: {
         name: user.name,
         email: user.email,
-        roles: user.member.roles.map((role) => role.name),
-        company: user.company.name,
+        roles: member.roles ? member.roles.map((role) => role.name) : [],
+        company: user.company ? user.company.name : "No Company",
       },
       subtaskStats: stats,
       missedDeadlines,
@@ -89,17 +132,27 @@ export const getEmployeeDashboard = async (req, res) => {
 // Get all subtasks assigned to the employee across all projects
 export const getEmployeeSubtasks = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user._id;
     const user = await User.findById(userId).populate("member");
 
-    if (!user || !user.member) {
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Ensure member exists for employee
+    let member = user.member;
+    if (!member && user.role === "employee") {
+      member = await ensureMemberExists(user);
+    }
+
+    if (!member) {
       return res
         .status(404)
         .json({ message: "Employee member record not found" });
     }
 
     const subtasks = await Subtask.find({
-      assignedMember: user.member._id,
+      assignedMember: member._id,
     })
       .populate("task", "name")
       .populate("assignedMember", "name email")
@@ -115,10 +168,20 @@ export const getEmployeeSubtasks = async (req, res) => {
 // Get projects assigned to employee (projects with subtasks assigned to them)
 export const getEmployeeProjects = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user._id;
     const user = await User.findById(userId).populate("member");
 
-    if (!user || !user.member) {
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Ensure member exists for employee
+    let member = user.member;
+    if (!member && user.role === "employee") {
+      member = await ensureMemberExists(user);
+    }
+
+    if (!member) {
       return res
         .status(404)
         .json({ message: "Employee member record not found" });
@@ -126,7 +189,7 @@ export const getEmployeeProjects = async (req, res) => {
 
     // Find all subtasks assigned to this member
     const subtasks = await Subtask.find({
-      assignedMember: user.member._id,
+      assignedMember: member._id,
     }).populate("task");
 
     // Get unique projects (tasks) from subtasks
@@ -151,7 +214,7 @@ export const getEmployeeProjects = async (req, res) => {
       const employeeSubtasks = project.subtasks.filter(
         (subtask) =>
           subtask.assignedMember &&
-          subtask.assignedMember._id.toString() === user.member._id.toString()
+          subtask.assignedMember._id.toString() === member._id.toString()
       );
 
       const totalSubtasks = project.subtasks.length;
@@ -180,12 +243,23 @@ export const getEmployeeProjects = async (req, res) => {
 // Update subtask status (employee can only update their own subtasks)
 export const updateEmployeeSubtask = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user._id;
     const { id } = req.params;
     const { status, comment, attachments } = req.body;
 
     const user = await User.findById(userId).populate("member");
-    if (!user || !user.member) {
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Ensure member exists for employee
+    let member = user.member;
+    if (!member && user.role === "employee") {
+      member = await ensureMemberExists(user);
+    }
+
+    if (!member) {
       return res
         .status(404)
         .json({ message: "Employee member record not found" });
@@ -193,7 +267,7 @@ export const updateEmployeeSubtask = async (req, res) => {
 
     const subtask = await Subtask.findOne({
       _id: id,
-      assignedMember: user.member._id,
+      assignedMember: member._id,
     });
 
     if (!subtask) {

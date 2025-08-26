@@ -146,7 +146,7 @@ export default function AuthForm({
             response.data.message ||
               "Registration successful! Please check your email for verification."
           );
-          navigate("/company-registration");
+          navigate("/login");
           break;
         }
 
