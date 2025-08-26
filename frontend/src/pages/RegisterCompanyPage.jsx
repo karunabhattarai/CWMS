@@ -64,11 +64,20 @@ export default function RegisterCompanyPage() {
     setLoading(true);
     const token = localStorage.getItem("token");
     try {
-      await axios.post(
+      const response = await axios.post(
         `${API_BASE}/api/company/create`,
         { name, description },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      // If a new token is provided, update it
+      if (response.data.token) {
+        localStorage.setItem("token", response.data.token);
+        // Force the auth context to reload with the new token
+        window.location.reload();
+        return;
+      }
+
       setSuccess("Company registered successfully!");
 
       // Wait a moment then fetch updated profile

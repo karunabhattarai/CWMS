@@ -50,20 +50,25 @@ export const registerUser = async (req, res) => {
       verificationToken: token,
     };
 
-    if (role === 'manager' || role === 'employee') {
+    if (role === "manager" || role === "employee") {
       if (!company) {
-        return res.status(400).json({ message: 'Your user does not have a company assigned' });
+        return res
+          .status(400)
+          .json({ message: "Your user does not have a company assigned" });
       }
       newUserData.company = company;
     }
 
     // If employee,and memberId is present then update the member and else create the member
-    if (role === 'employee') {
+    if (role === "employee") {
       if (req.body.memberId) {
         // Update existing member
-        const member = await Member.findOne({ _id: req.body.memberId, company });
+        const member = await Member.findOne({
+          _id: req.body.memberId,
+          company,
+        });
         if (!member) {
-          return res.status(404).json({ message: 'Member not found' });
+          return res.status(404).json({ message: "Member not found" });
         }
         member.name = name || member.name;
         member.email = email || member.email;
@@ -112,18 +117,24 @@ export const registerUser = async (req, res) => {
         <a href="${resetLink}">Set Your Password</a>
         <p>This link will expire in 24 hours.</p>
       `;
-      await sendEmail(email, "Welcome to CWMS - Activate Your Account", message);
+      await sendEmail(
+        email,
+        "Welcome to CWMS - Activate Your Account",
+        message
+      );
     }
 
     // Send response
-    const msg = `${role.charAt(0).toUpperCase() + role.slice(1)} registered successfully. Email verification link sent to email.`;
-
+    const msg = `${
+      role.charAt(0).toUpperCase() + role.slice(1)
+    } registered successfully. Email verification link sent to email.`;
 
     res.status(201).json({ message: msg, user: newUser });
-
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal server error', error: error.message });
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: error.message });
   }
 };
 
@@ -167,18 +178,18 @@ export const loginUser = async (req, res) => {
         .status(400)
         .json({ message: "Email and password are required" });
     }
-    const user = await User.findOne({ email }).select("+password");
+    const user = await User.findOne({ email })
+      .select("+password")
+      .populate("company", "name");
     if (!user) {
       return res.status(404).json({ message: "user not found" });
     }
     // Check if user is verified
     if (!user.isVerified) {
-      return res
-        .status(403)
-        .json({
-          message:
-            "User not verified. Please check your email for verification link.",
-        });
+      return res.status(403).json({
+        message:
+          "User not verified. Please check your email for verification link.",
+      });
     }
 
     // Check password
@@ -189,7 +200,12 @@ export const loginUser = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user._id, company: user.company?._id, role: user.role },
+      {
+        id: user._id,
+        company: user.company?._id,
+        companyName: user.company?.name || null,
+        role: user.role,
+      },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
