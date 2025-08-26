@@ -3,6 +3,7 @@ import AuthPage from "../pages/AuthPage";
 import ResetPasswordPage from "../pages/ResetPasswordPage";
 import OnboardingPage from "../pages/OnboardingPage";
 import DashboardPage from "../pages/DashboardPage";
+import EmployeeDashboard from "../pages/EmployeeDashboard";
 import ReportsPage from "../pages/ReportsPage";
 import SettingsPage from "../pages/SettingsPage";
 
@@ -10,11 +11,16 @@ import DashboardLayout from "../layouts/DashboardLayout";
 import PublicLayout from "../layouts/PublicLayout";
 
 import ProjectsPage from "../pages/ProjectsPage";
+import EmployeeProjects from "../pages/EmployeeProjects";
+import SmartDashboard from "../components/SmartDashboard";
+import SmartProjects from "../components/SmartProjects";
+import EmployeeKanban from "../pages/EmployeeKanban";
 import CreateProjectPage from "../pages/CreateProject";
 import RolesPage from "../pages/RolesPage";
 import MembersPage from "../pages/MembersPage";
 import RegisterCompanyPage from "../pages/RegisterCompanyPage";
 import ProtectedRoute from "../components/ProtectedRoute";
+import RoleProtectedRoute from "../components/RoleProtectedRoute";
 import CompanyGuardedRoute from "../components/CompanyGuardedRoute";
 import AuthRedirectRoute from "../components/AuthRedirectRoute";
 import TaskDetailsPage from "../pages/TaskDetailsPage";
@@ -78,7 +84,7 @@ export const routes = [
     element: (
       <ProtectedRoute>
         <DashboardLayout>
-          <DashboardPage />
+          <SmartDashboard />
         </DashboardLayout>
       </ProtectedRoute>
     ),
@@ -87,9 +93,11 @@ export const routes = [
     path: "/reports",
     element: (
       <ProtectedRoute>
-        <DashboardLayout>
-          <ReportsPage />
-        </DashboardLayout>
+        <RoleProtectedRoute allowedRoles={["superadmin", "manager"]}>
+          <DashboardLayout>
+            <ReportsPage />
+          </DashboardLayout>
+        </RoleProtectedRoute>
       </ProtectedRoute>
     ),
   },
@@ -97,9 +105,11 @@ export const routes = [
     path: "/members",
     element: (
       <ProtectedRoute>
-        <DashboardLayout>
-          <MembersPage />
-        </DashboardLayout>
+        <RoleProtectedRoute allowedRoles={["superadmin", "manager"]}>
+          <DashboardLayout>
+            <MembersPage />
+          </DashboardLayout>
+        </RoleProtectedRoute>
       </ProtectedRoute>
     ),
   },
@@ -107,9 +117,11 @@ export const routes = [
     path: "/roles",
     element: (
       <ProtectedRoute>
-        <DashboardLayout>
-          <RolesPage />
-        </DashboardLayout>
+        <RoleProtectedRoute allowedRoles={["superadmin", "manager"]}>
+          <DashboardLayout>
+            <RolesPage />
+          </DashboardLayout>
+        </RoleProtectedRoute>
       </ProtectedRoute>
     ),
   },
@@ -118,8 +130,20 @@ export const routes = [
     element: (
       <ProtectedRoute>
         <DashboardLayout>
-          <ProjectsPage />
+          <SmartProjects />
         </DashboardLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/kanban",
+    element: (
+      <ProtectedRoute>
+        <RoleProtectedRoute allowedRoles={["employee"]}>
+          <DashboardLayout>
+            <EmployeeKanban />
+          </DashboardLayout>
+        </RoleProtectedRoute>
       </ProtectedRoute>
     ),
   },
@@ -127,9 +151,11 @@ export const routes = [
     path: "/createproject",
     element: (
       <ProtectedRoute>
-        <DashboardLayout>
-          <CreateProjectPage />
-        </DashboardLayout>
+        <RoleProtectedRoute allowedRoles={["superadmin", "manager"]}>
+          <DashboardLayout>
+            <CreateProjectPage />
+          </DashboardLayout>
+        </RoleProtectedRoute>
       </ProtectedRoute>
     ),
   },

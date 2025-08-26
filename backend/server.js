@@ -37,15 +37,16 @@ app.use(
 app.use(express.json()); // Middleware to parse JSON bodies
 
 // Routes
-app.use('/api/user', userRoutes);
-app.use('/api/company', companyRoutes);
-app.use('/api/role', roleRoutes);
-app.use('/api/member', memberRoutes);
-app.use('/api/subtask-template', subtaskTemplateRoutes);
-app.use('/api/task-template', taskTemplateRoutes);
-app.use('/api/task', taskRoutes);
-app.use('/api/subtask', subtaskRoutes);
-app.use('/api/schedule', schedulingRoutes);
+app.use("/api/user", userRoutes);
+app.use("/api/company", companyRoutes);
+app.use("/api/role", roleRoutes);
+app.use("/api/member", memberRoutes);
+app.use("/api/subtask-template", subtaskTemplateRoutes);
+app.use("/api/task-template", taskTemplateRoutes);
+app.use("/api/task", taskRoutes);
+app.use("/api/subtask", subtaskRoutes);
+app.use("/api/schedule", schedulingRoutes);
+app.use("/api/employee", employeeRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);

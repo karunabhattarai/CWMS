@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 import {
   HomeIcon,
   ChartBarIcon,
@@ -10,18 +11,80 @@ import {
   Cog6ToothIcon,
   Bars3Icon,
   XMarkIcon,
+  ViewColumnsIcon,
 } from "@heroicons/react/24/outline";
 
-const navItems = [
-  { label: "Dashboard", to: "/dashboard", icon: HomeIcon },
-  { label: "Reports", to: "/reports", icon: ChartBarIcon },
-  { label: "Members", to: "/members", icon: UsersIcon },
-  { label: "Roles", to: "/roles", icon: BriefcaseIcon },
-  { label: "Projects", to: "/projects", icon: FolderIcon },
-];
+// Define navigation items with role restrictions
+const getNavItems = (userRole) => {
+  const baseItems = [
+    {
+      label: "Dashboard",
+      to: "/dashboard",
+      icon: HomeIcon,
+      roles: ["superadmin", "manager", "employee"],
+    },
+  ];
+
+  const managerAndSuperAdminItems = [
+    {
+      label: "Reports",
+      to: "/reports",
+      icon: ChartBarIcon,
+      roles: ["superadmin", "manager"],
+    },
+    {
+      label: "Members",
+      to: "/members",
+      icon: UsersIcon,
+      roles: ["superadmin", "manager"],
+    },
+    {
+      label: "Roles",
+      to: "/roles",
+      icon: BriefcaseIcon,
+      roles: ["superadmin", "manager"],
+    },
+  ];
+
+  const projectsItem = [
+    {
+      label: "Projects",
+      to: "/projects",
+      icon: FolderIcon,
+      roles: ["superadmin", "manager", "employee"],
+    },
+  ];
+
+  const employeeItems = [
+    {
+      label: "My Task Board",
+      to: "/kanban",
+      icon: ViewColumnsIcon,
+      roles: ["employee"],
+    },
+  ];
+
+  let allItems = [...baseItems];
+
+  // Add role-specific items
+  if (userRole === "superadmin" || userRole === "manager") {
+    allItems = [...allItems, ...managerAndSuperAdminItems];
+  }
+
+  allItems = [...allItems, ...projectsItem];
+
+  if (userRole === "employee") {
+    allItems = [...allItems, ...employeeItems];
+  }
+
+  return allItems.filter((item) => item.roles.includes(userRole));
+};
 
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
+  const { user } = useAuth();
+
+  const navItems = getNavItems(user?.role || "employee");
 
   // Sidebar width for expanded/collapsed
   const sidebarWidth = "w-64";

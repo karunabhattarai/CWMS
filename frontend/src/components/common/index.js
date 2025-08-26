@@ -9,3 +9,5 @@ export { Card, CardHeader, CardTitle, CardActions } from "./Card";
 export { default as ProgressBar } from "./ProgressBar";
 export { default as StatusBadge } from "./StatusBadge";
 export { Avatar, AvatarGroup } from "./Avatar";
+export { default as Container } from "./Container";
+export { default as LoadingSpinner } from "./LoadingSpinner";

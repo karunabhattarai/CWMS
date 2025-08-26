@@ -1,64 +1,63 @@
 // routes/taskRoutes.js
-import express from 'express';
-import authMiddleware from '../middleware/authMiddleware.js';
-import allowRoles from '../middleware/roleMiddleware.js';
-import { scheduleTaskPERT,schedulePERTFromRaw } from '../controllers/schedulingController.js';
-import { computePDM } from '../algorithms/pdm.js';
+import express from "express";
+import authMiddleware from "../middleware/authMiddleware.js";
+import allowRoles from "../middleware/roleMiddleware.js";
+import {
+  scheduleTaskPERT,
+  schedulePERTFromRaw,
+} from "../controllers/schedulingController.js";
+import { computePDM } from "../algorithms/pdm.js";
 import {
   createTask,
   getAllTasks,
   updateTask,
   deleteTask,
-  getTaskById 
+  getTaskById,
   // getCPMData
-} from '../controllers/taskController.js';
+} from "../controllers/taskController.js";
 
 const router = express.Router();
 
-
-
-
 // for pert
-router.get('/schedule-pert/:taskId', scheduleTaskPERT);
-router.post('/schedule-pert', schedulePERTFromRaw);
+router.get("/schedule-pert/:taskId", scheduleTaskPERT);
+router.post("/schedule-pert", schedulePERTFromRaw);
 
 //pdm
-router.post('/schedule-pdm/:taskId', computePDM);
-router.post('/schedule-pdm', computePDM);
-
+router.post("/schedule-pdm/:taskId", computePDM);
+router.post("/schedule-pdm", computePDM);
 
 // for task
 router.post(
-  '/',
+  "/",
   authMiddleware,
-  allowRoles('superadmin', 'manager'),
+  allowRoles("superadmin", "manager"),
   createTask
 );
 
 router.get(
-  '/',
+  "/",
   authMiddleware,
-  allowRoles('superadmin', 'manager'),
+  allowRoles("superadmin", "manager"),
   getAllTasks
 );
 
 router.put(
-  '/:id',
+  "/:id",
   authMiddleware,
-  allowRoles('superadmin', 'manager'),
+  allowRoles("superadmin", "manager"),
   updateTask
 );
 
 router.delete(
-  '/:id',
+  "/:id",
   authMiddleware,
-  allowRoles('superadmin', 'manager'),
+  allowRoles("superadmin", "manager"),
   deleteTask
 );
 router.get(
-  '/:id',
+  "/:id",
   authMiddleware,
-  allowRoles('superadmin', 'manager'),
+  allowRoles("superadmin", "manager", "employee"),
   getTaskById
 );
 
