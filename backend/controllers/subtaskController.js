@@ -24,7 +24,7 @@ export const updateSubtask = async (req, res) => {
   try {
     const { id } = req.params;
     const { status, comment, assignedMember, attachments } = req.body;
-
+    console.log(status);
     const subtask = await Subtask.findById(id);
     if (!subtask) return res.status(404).json({ message: 'Subtask not found' });
 
@@ -36,6 +36,7 @@ export const updateSubtask = async (req, res) => {
         subtask.completedAt = new Date();
       }
       subtask.status = status;
+      console.log("Status updated to:", status);
     }
 
     if (comment !== undefined) subtask.comment = comment;

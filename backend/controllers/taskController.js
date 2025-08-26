@@ -352,91 +352,75 @@ export const createTask = async (req, res) => {
     });
     await task.save({ session });
 
-    // Create subtasks
-    const createdSubtasks = [];
-    const subtaskIndexToId = {}; // for dependency mapping
+  // Create subtasks
+  const createdSubtasks = [];
+  const subtaskIndexToId = {}; // for dependency mapping
+  const subtaskIndexToNewId = {}; // key: index in templateData.subtasks, value: new subtask._id
 
-    for (let i = 0; i < finalSubtasks.length; i++) {
-      const sub = finalSubtasks[i];
-      let subtask;
+  for (let i = 0; i < finalSubtasks.length; i++) {
+    const sub = finalSubtasks[i];
+    let subtask;
 
-      try {
-        if (sub.subtaskTemplate) {
-          // From template
-          const templateDoc = await SubtaskTemplate.findById(
-            sub.subtaskTemplate
-          );
-          if (!templateDoc) {
-            await session.abortTransaction();
-            session.endSession();
-            return res.status(400).json({
-              message: `Subtask template ${sub.subtaskTemplate} not found`,
-            });
-          }
-
-          // FIXED: Use the assignedMember from finalSubtasks directly
-          const assignedMember = sub.assignedMember || null;
-
-          subtask = new Subtask({
-            task: task._id,
-            name: templateDoc.name,
-            subtaskTemplate: templateDoc._id,
-            assignedMember: assignedMember,
-            estimatedDurationDays:
-              sub.estimatedDurationDays || templateDoc.estimatedDurationDays,
-          });
-
-          console.log(`Creating subtask ${i}:`, {
-            name: templateDoc.name,
-            assignedMemberFromFinal: sub.assignedMember,
-            assignedMemberSet: assignedMember,
-          });
-        } else if (sub.name && sub.role && sub.estimatedDurationDays) {
-          // Manual subtask
-          const assignedMember = sub.assignedMember || null;
-
-          subtask = new Subtask({
-            task: task._id,
-            name: sub.name,
-            role: sub.role,
-            description: sub.description || "",
-            estimatedDurationDays: sub.estimatedDurationDays,
-            assignedMember: assignedMember,
-            status: sub.status || "Not Started",
-          });
-
-          console.log(`Creating manual subtask ${i}:`, {
-            name: sub.name,
-            assignedMemberFromSub: sub.assignedMember,
-            assignedMemberSet: assignedMember,
-          });
-        } else {
+    try {
+      if (sub.subtaskTemplate) {
+        const templateDoc = await SubtaskTemplate.findById(sub.subtaskTemplate);
+        if (!templateDoc) {
           await session.abortTransaction();
           session.endSession();
           return res.status(400).json({
-            message: `Subtask ${
-              i + 1
-            }: Must have either "subtaskTemplate" OR all of "role", "name", "estimatedDurationDays"`,
+            message: `Subtask template ${sub.subtaskTemplate} not found`,
           });
         }
 
+        const assignedMember = sub.assignedMember || null;
+
+        subtask = new Subtask({
+          task: task._id,
+          name: templateDoc.name,
+          subtaskTemplate: templateDoc._id,
+          assignedMember,
+          estimatedDurationDays: sub.estimatedDurationDays || templateDoc.estimatedDurationDays,
+        });
+
         await subtask.save({ session });
         createdSubtasks.push(subtask._id);
-        subtaskIndexToId[i] = subtask._id;
-      } catch (error) {
-        console.error(`Subtask ${i} creation error:`, error);
-        await session.abortTransaction();
-        session.endSession();
-        return res.status(500).json({
-          message: `Failed to create subtask ${i + 1}`,
-          error: error.message,
-        });
+
+        // ✅ Map index to new ID
+        subtaskIndexToNewId[i] = subtask._id;
       }
+      // ... handle manual subtasks here if needed
+    } catch (error) {
+      console.error(`Subtask ${i} creation error:`, error);
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(500).json({
+        message: `Failed to create subtask ${i + 1}`,
+        error: error.message,
+      });
     }
+  }
+
+  // ✅ Remap dependencies from indices → actual subtask IDs
+  for (let i = 0; i < finalSubtasks.length; i++) {
+    const sub = finalSubtasks[i];
+    if (Array.isArray(sub.dependencies)) {
+      sub.dependencies = sub.dependencies
+        .map(depIndex => subtaskIndexToNewId[depIndex])
+        .filter(Boolean); // remove undefined
+    }
+  }
+
+  // Update subtasks in DB
+  for (let i = 0; i < finalSubtasks.length; i++) {
+    await Subtask.findByIdAndUpdate(subtaskIndexToNewId[i], {
+      dependencies: finalSubtasks[i].dependencies,
+    }, { session });
+  }
+
 
     // Assign dependencies
     if (finalSubtasks.length > 0) {
-      await assignSubtaskDependencies(subtaskIndexToId, finalSubtasks);
+      await assignSubtaskDependencies(subtaskIndexToNewId, finalSubtasks);
     }
 
     // Update task with subtasks
