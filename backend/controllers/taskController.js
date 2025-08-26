@@ -220,13 +220,20 @@ export const createTask = async (req, res) => {
     // If using template, prepare subtasks data from template
     let finalSubtasks = [];
     if (templateData) {
-      // Map frontend subtasks by subtaskTemplate ID for easy lookup
+      // FIXED: Map frontend subtasks by subtaskTemplate ID for easy lookup
       const frontendSubtaskMap = new Map();
       subtasks.forEach((sub) => {
         if (sub.subtaskTemplate) {
+          // Store both the original and string version as keys to handle any mismatch
           frontendSubtaskMap.set(sub.subtaskTemplate, sub);
+          frontendSubtaskMap.set(sub.subtaskTemplate.toString(), sub);
         }
       });
+
+      console.log(
+        "Frontend subtask map keys:",
+        Array.from(frontendSubtaskMap.keys())
+      );
 
       // Build final subtasks from template with frontend overrides
       for (let i = 0; i < templateData.subtasks.length; i++) {
@@ -242,9 +249,35 @@ export const createTask = async (req, res) => {
           continue;
         }
 
-        const frontendOverride = frontendSubtaskMap.get(
-          templateSub.subtaskTemplate.toString()
-        );
+        // FIXED: Use the subtaskTemplate._id (from the fetched document) to match the frontend
+        const templateId = subtaskTemplate._id.toString();
+        let frontendOverride = frontendSubtaskMap.get(templateId);
+
+        console.log(`Template ${i} - Looking for key: ${templateId}:`, {
+          availableKeys: Array.from(frontendSubtaskMap.keys()),
+          frontendOverride: frontendOverride
+            ? {
+                assignedMember: frontendOverride.assignedMember,
+                estimatedDurationDays: frontendOverride.estimatedDurationDays,
+              }
+            : null,
+        });
+
+        // FIXED: Better assignedMember assignment logic
+        let assignedMember = null;
+        if (frontendOverride?.assignedMember) {
+          const memberValue = frontendOverride.assignedMember.toString().trim();
+          if (
+            memberValue &&
+            memberValue !== "" &&
+            memberValue !== "null" &&
+            memberValue !== "undefined"
+          ) {
+            assignedMember = memberValue;
+          }
+        }
+
+        console.log(`Final assignedMember for subtask ${i}:`, assignedMember);
 
         finalSubtasks.push({
           subtaskTemplate: subtaskTemplate._id,
@@ -252,13 +285,22 @@ export const createTask = async (req, res) => {
           estimatedDurationDays:
             frontendOverride?.estimatedDurationDays ||
             subtaskTemplate.estimatedDurationDays,
-          assignedMember: frontendOverride?.assignedMember || null,
+          assignedMember: assignedMember,
           dependencies: templateSub.dependencies || [],
         });
       }
     } else {
       finalSubtasks = subtasks;
     }
+
+    console.log(
+      "Final subtasks array:",
+      finalSubtasks.map((sub, i) => ({
+        index: i,
+        assignedMember: sub.assignedMember,
+        role: sub.role,
+      }))
+    );
 
     // Validate member assignments
     if (finalSubtasks.length > 0) {
@@ -318,61 +360,78 @@ export const createTask = async (req, res) => {
       const sub = finalSubtasks[i];
       let subtask;
 
-      if (sub.subtaskTemplate) {
-        // From template
-        const templateDoc = await SubtaskTemplate.findById(sub.subtaskTemplate);
-        if (!templateDoc) {
+      try {
+        if (sub.subtaskTemplate) {
+          // From template
+          const templateDoc = await SubtaskTemplate.findById(
+            sub.subtaskTemplate
+          );
+          if (!templateDoc) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({
+              message: `Subtask template ${sub.subtaskTemplate} not found`,
+            });
+          }
+
+          // FIXED: Use the assignedMember from finalSubtasks directly
+          const assignedMember = sub.assignedMember || null;
+
+          subtask = new Subtask({
+            task: task._id,
+            name: templateDoc.name,
+            subtaskTemplate: templateDoc._id,
+            assignedMember: assignedMember,
+            estimatedDurationDays:
+              sub.estimatedDurationDays || templateDoc.estimatedDurationDays,
+          });
+
+          console.log(`Creating subtask ${i}:`, {
+            name: templateDoc.name,
+            assignedMemberFromFinal: sub.assignedMember,
+            assignedMemberSet: assignedMember,
+          });
+        } else if (sub.name && sub.role && sub.estimatedDurationDays) {
+          // Manual subtask
+          const assignedMember = sub.assignedMember || null;
+
+          subtask = new Subtask({
+            task: task._id,
+            name: sub.name,
+            role: sub.role,
+            description: sub.description || "",
+            estimatedDurationDays: sub.estimatedDurationDays,
+            assignedMember: assignedMember,
+            status: sub.status || "Not Started",
+          });
+
+          console.log(`Creating manual subtask ${i}:`, {
+            name: sub.name,
+            assignedMemberFromSub: sub.assignedMember,
+            assignedMemberSet: assignedMember,
+          });
+        } else {
           await session.abortTransaction();
           session.endSession();
           return res.status(400).json({
-            message: `Subtask template ${sub.subtaskTemplate} not found`,
+            message: `Subtask ${
+              i + 1
+            }: Must have either "subtaskTemplate" OR all of "role", "name", "estimatedDurationDays"`,
           });
         }
 
-        subtask = new Subtask({
-          task: task._id,
-          name: templateDoc.name,
-          subtaskTemplate: templateDoc._id,
-          assignedMember: sub.assignedMember || null,
-          estimatedDurationDays:
-            sub.estimatedDurationDays || templateDoc.estimatedDurationDays,
-        });
-
-        console.log(`Creating subtask ${i}:`, {
-          name: templateDoc.name,
-          assignedMember: sub.assignedMember,
-          assignedMemberSet: subtask.assignedMember,
-        });
-      } else if (sub.name && sub.role && sub.estimatedDurationDays) {
-        // Manual subtask
-        subtask = new Subtask({
-          task: task._id,
-          name: sub.name,
-          role: sub.role,
-          description: sub.description || "",
-          estimatedDurationDays: sub.estimatedDurationDays,
-          assignedMember: sub.assignedMember || null,
-          status: sub.status || "Not Started",
-        });
-
-        console.log(`Creating manual subtask ${i}:`, {
-          name: sub.name,
-          assignedMember: sub.assignedMember,
-          assignedMemberSet: subtask.assignedMember,
-        });
-      } else {
+        await subtask.save({ session });
+        createdSubtasks.push(subtask._id);
+        subtaskIndexToId[i] = subtask._id;
+      } catch (error) {
+        console.error(`Subtask ${i} creation error:`, error);
         await session.abortTransaction();
         session.endSession();
-        return res.status(400).json({
-          message: `Subtask ${
-            i + 1
-          }: Must have either "subtaskTemplate" OR all of "role", "name", "estimatedDurationDays"`,
+        return res.status(500).json({
+          message: `Failed to create subtask ${i + 1}`,
+          error: error.message,
         });
       }
-
-      await subtask.save({ session });
-      createdSubtasks.push(subtask._id);
-      subtaskIndexToId[i] = subtask._id;
     }
 
     // Assign dependencies
