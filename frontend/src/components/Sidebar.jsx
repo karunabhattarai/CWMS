@@ -102,68 +102,72 @@ export default function Sidebar() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full z-40 ${sidebarWidth} ${sidebarBg} border-r border-green-100 shadow-lg flex flex-col transition-transform duration-300 ${
+        className={`fixed top-0 left-0 h-full z-40 ${sidebarWidth} ${sidebarBg} border-r border-green-200 shadow-lg flex flex-col transition-transform duration-300 ${
           open ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0`}
       >
-        {/* Logo & close button */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-green-100">
-          <span className="font-serif text-2xl font-bold text-green-800 px-2">
-            CWMS
-          </span>
+        {/* Header with close button */}
+        <div className="flex items-center justify-end px-4 py-4 border-b border-green-200">
           <button
-            className="lg:hidden"
+            className="lg:hidden p-2 rounded-lg hover:bg-green-100 transition-colors"
             onClick={() => setOpen(false)}
             aria-label="Close sidebar"
           >
-            <XMarkIcon className="w-6 h-6 text-green-700" />
+            <XMarkIcon className="w-5 h-5 text-green-700" />
           </button>
         </div>
         {/* Nav links */}
-        <nav className="flex-1 px-2 py-4 space-y-1">
+        <nav className="flex-1 px-3 py-6 space-y-2">
           {navItems.map((item) => (
             <NavLink
               key={item.label}
               to={item.to}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-2 rounded-lg font-sans text-green-900 hover:bg-green-100 transition
+                `flex items-center gap-3 px-4 py-3 rounded-xl font-sans text-green-900 hover:bg-green-100 hover:shadow-sm transition-all duration-200
                 ${
                   isActive
-                    ? "bg-green-200 font-semibold border-l-4 border-green-600"
+                    ? "bg-green-200 font-semibold shadow-sm border-l-4 border-green-600"
                     : ""
                 }`
               }
               onClick={() => setOpen(false)}
             >
-              <item.icon className="w-6 h-6 text-green-700" />
-              <span>{item.label}</span>
+              <item.icon className="w-5 h-5 text-green-700" />
+              <span className="text-sm">{item.label}</span>
             </NavLink>
           ))}
         </nav>
         {/* Profile/settings */}
-        <div className="mt-auto px-6 py-4 border-t border-green-100 flex items-center gap-3">
-          <UserCircleIcon className="w-8 h-8 text-green-700" />
-          <div>
-            <div className="font-semibold text-green-900">Name</div>
-            <NavLink
-              to="/settings"
-              className="flex items-center gap-1 text-sm text-green-700 hover:underline"
-              onClick={() => setOpen(false)}
-            >
-              <Cog6ToothIcon className="w-4 h-4" />
-              Settings
-            </NavLink>
+        <div className="mt-auto px-4 py-4 border-t border-green-200">
+          <div className="flex items-center gap-3 px-2">
+            <UserCircleIcon className="w-8 h-8 text-green-700" />
+            <div className="flex-1">
+              <div className="font-semibold text-green-900 text-sm truncate">
+                {user?.username || "User"}
+              </div>
+              <div className="text-xs text-green-600 capitalize">
+                {user?.role || "Member"}
+              </div>
+            </div>
           </div>
+          <NavLink
+            to="/settings"
+            className="flex items-center gap-2 mt-3 px-2 py-2 text-sm text-green-700 hover:bg-green-100 rounded-lg transition-colors"
+            onClick={() => setOpen(false)}
+          >
+            <Cog6ToothIcon className="w-4 h-4" />
+            Settings
+          </NavLink>
         </div>
       </aside>
 
       {!open && (
         <button
-          className="fixed left-3 top-5 z-50 bg-green-700 text-white p-1 block lg:hidden"
+          className="fixed left-3 top-5 z-50 bg-green-700 hover:bg-green-800 text-white p-2 rounded-lg shadow-lg block lg:hidden transition-colors"
           onClick={() => setOpen(true)}
           aria-label="Open sidebar"
         >
-          <Bars3Icon className="w-6 h-6" />
+          <Bars3Icon className="w-5 h-5" />
         </button>
       )}
     </>

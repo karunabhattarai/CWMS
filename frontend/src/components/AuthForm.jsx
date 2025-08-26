@@ -133,11 +133,12 @@ export default function AuthForm({
 
         case "register": {
           response = await axios.post(
-            "http://localhost:5000/api/user/register/superadmin",
+            "http://localhost:5000/api/user/register",
             {
               name,
               email,
               password,
+              role: "superadmin",
             }
           );
 

@@ -11,3 +11,4 @@ export { default as StatusBadge } from "./StatusBadge";
 export { Avatar, AvatarGroup } from "./Avatar";
 export { default as Container } from "./Container";
 export { default as LoadingSpinner } from "./LoadingSpinner";
+export { default as ConfirmationModal } from "./ConfirmationModal";

@@ -5,7 +5,7 @@ import OnboardingRolesStep from "../components/onboarding/OnboardingRolesStep";
 import OnboardingMembersStep from "../components/onboarding/OnboardingMembersStep";
 import OnboardingProjectStep from "../components/onboarding/OnboardingProjectStep";
 import OnboardingSummaryStep from "../components/onboarding/OnboardingSummaryStep";
-import CreateManagerModal from "../components/onboarding/CreateManagerModal";
+import AddManagerModal from "../components/AddManagerModal";
 import { useAuth } from "../hooks/useAuth";
 import {
   ONBOARDING_STORAGE_KEY,
@@ -37,7 +37,7 @@ export default function OnboardingPage() {
       try {
         const token = localStorage.getItem("token");
         if (!token) {
-          window.location.href = "/auth";
+          window.location.href = "/login";
           return;
         }
 
@@ -160,15 +160,15 @@ export default function OnboardingPage() {
         <>
           <OnboardingStepper step={step} />
 
-          {/* Skip onboarding information - only for superadmins */}
-          {step === 1 && userRole === "superadmin" && (
+          {/* Skip onboarding information */}
+          {step === 1 && (
             <div className="w-full max-w-xl mx-auto mb-6 px-4">
               <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-4">
                 <p className="text-cyan-800 font-sans text-sm text-center">
                   💡 <strong>Tip:</strong> You can skip the onboarding process
-                  and delegate it to a manager. This allows you to get started
-                  quickly while giving someone else the responsibility to set up
-                  your team structure.
+                  and set up your team structure later from the dashboard.
+                  {userRole === "superadmin" &&
+                    " As a superadmin, you can also delegate the setup to a manager."}
                 </p>
               </div>
             </div>
@@ -189,6 +189,7 @@ export default function OnboardingPage() {
               roles={roles}
               onNext={() => setStep(3)}
               onBack={() => setStep(1)}
+              onSkip={handleSkip}
             />
           )}
           {step === 3 && (
@@ -198,6 +199,7 @@ export default function OnboardingPage() {
               roles={roles}
               onNext={() => setStep(4)}
               onBack={() => setStep(2)}
+              onSkip={handleSkip}
             />
           )}
           {step === 4 && (
@@ -210,11 +212,12 @@ export default function OnboardingPage() {
             />
           )}
 
-          <CreateManagerModal
+          <AddManagerModal
             isOpen={showManagerModal}
             onClose={() => setShowManagerModal(false)}
             onSkip={handleSkipWithoutManager}
             onManagerCreated={handleManagerCreated}
+            variant="onboarding"
           />
         </>
       )}

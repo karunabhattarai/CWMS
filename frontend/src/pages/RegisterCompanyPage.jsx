@@ -1,14 +1,14 @@
-import { useLocation, Navigate } from "react-router-dom";
+import { useLocation, Navigate, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import axios from "axios";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
-const REDIRECT_DELAY = 1200; // ms
 
 export default function RegisterCompanyPage() {
   const location = useLocation();
-  const { user, setUser } = useAuth();
+  const navigate = useNavigate();
+  const { user, updateUserProfile } = useAuth();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,9 +24,9 @@ export default function RegisterCompanyPage() {
     }
   }, [location.state]);
 
-  //Prevent access if user already has a company
+  //Prevent access if user already has a company - redirect to onboarding instead of dashboard
   if (user?.company) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/onboarding" replace />;
   }
 
   const fetchAndSetUserProfile = async (token) => {
@@ -38,9 +38,18 @@ export default function RegisterCompanyPage() {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      setUser({ ...res.data, isAuthenticated: true, token });
-    } catch {
-      setError("Profile update failed");
+      // Update the user profile in auth context with the new company data
+      updateUserProfile({
+        ...res.data,
+        company: res.data.company,
+        companyName: res.data.company?.name,
+      });
+      console.log("Updated user profile:", res.data); // Debug log
+      return res.data;
+    } catch (error) {
+      console.error("Profile update failed:", error);
+      setError("Failed to update profile. Please refresh the page.");
+      throw error;
     }
   };
 
@@ -60,19 +69,37 @@ export default function RegisterCompanyPage() {
         { name, description },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setSuccess("Company registered.");
-      await fetchAndSetUserProfile(token);
-      setTimeout(() => {
-        window.location.href = "/onboarding";
-      }, REDIRECT_DELAY);
+      setSuccess("Company registered successfully!");
+
+      // Wait a moment then fetch updated profile
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      const updatedUser = await fetchAndSetUserProfile(token);
+
+      if (updatedUser && updatedUser.company) {
+        setTimeout(() => {
+          navigate("/onboarding");
+        }, 1000);
+      } else {
+        setError(
+          "Company registered but profile update failed. Please refresh the page."
+        );
+      }
     } catch (err) {
       if (err.response?.data?.message === "Company already exists") {
-        await fetchAndSetUserProfile(token);
-        setTimeout(() => {
-          window.location.href = "/onboarding";
-        }, REDIRECT_DELAY);
+        setSuccess("Company already exists. Redirecting to onboarding...");
+        try {
+          await fetchAndSetUserProfile(token);
+          setTimeout(() => {
+            navigate("/onboarding");
+          }, 1000);
+        } catch {
+          setError("Please refresh the page and try again.");
+        }
       } else {
-        setError("Registration failed");
+        setError(
+          err.response?.data?.message ||
+            "Registration failed. Please try again."
+        );
       }
     } finally {
       setLoading(false);

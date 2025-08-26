@@ -39,21 +39,21 @@ export const routes = [
   {
     path: "/login",
     element: (
-      <>
+      <AuthRedirectRoute>
         <PublicLayout>
           <AuthPage />
         </PublicLayout>
-      </>
+      </AuthRedirectRoute>
     ),
   },
   {
     path: "/reset-password",
     element: (
-      <>
+      <AuthRedirectRoute>
         <PublicLayout>
           <ResetPasswordPage />
         </PublicLayout>
-      </>
+      </AuthRedirectRoute>
     ),
   },
   {

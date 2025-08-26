@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import axios from "axios";
+import { jwtDecode } from "jwt-decode";
+import AddManagerModal from "../components/AddManagerModal";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -15,7 +17,18 @@ export default function DashboardPage() {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showAddManagerModal, setShowAddManagerModal] = useState(false);
   const token = localStorage.getItem("token");
+
+  // Get user role from JWT
+  let userRole = "";
+  if (token) {
+    try {
+      userRole = jwtDecode(token).role;
+    } catch (e) {
+      // Handle decode error silently
+    }
+  }
 
   useEffect(() => {
     async function fetchData() {
@@ -46,8 +59,19 @@ export default function DashboardPage() {
       }
     }
 
-    fetchData();
-  }, []);
+    if (token) {
+      fetchData();
+    }
+  }, [token]);
+
+  // Handler for when a new manager is created
+  const handleManagerCreated = (newManager) => {
+    // Optionally refresh members list or show a success message
+    if (newManager) {
+      // You could add the new manager to the members list if needed
+      console.log("New manager created:", newManager);
+    }
+  };
 
   // Flatten all subtasks for calculations
   const allSubtasks = useMemo(() => {
@@ -219,18 +243,33 @@ export default function DashboardPage() {
       {/* Quick Actions */}
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row gap-4 justify-center">
         <a
-          href="/createProject"
+          href="/createproject"
           className="bg-green-700 hover:bg-green-800 text-white px-6 py-3 rounded-xl font-bold text-lg text-center transition"
         >
           + New Project
         </a>
         <a
           href="/projects"
-          className="bg-green-100 hover:bg-green-200 text-green-900 px-6 py-3 rounded-xl font-bold text-lg text-center transition"
+          className="bg-green-700 hover:bg-green-800 text-white px-6 py-3 rounded-xl font-bold text-lg text-center transition"
         >
           View All Projects
         </a>
+        {userRole === "superadmin" && (
+          <button
+            onClick={() => setShowAddManagerModal(true)}
+            className="bg-green-700 hover:bg-green-800 text-white px-6 py-3 rounded-xl font-bold text-lg text-center transition"
+          >
+            + Add Manager
+          </button>
+        )}
       </div>
+
+      {/* Add Manager Modal */}
+      <AddManagerModal
+        isOpen={showAddManagerModal}
+        onClose={() => setShowAddManagerModal(false)}
+        onManagerCreated={handleManagerCreated}
+      />
     </div>
   );
 }

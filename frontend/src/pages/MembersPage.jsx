@@ -4,6 +4,7 @@ import { jwtDecode } from "jwt-decode";
 import MemberList from "../components/members/MemberList";
 import MemberAddModal from "../components/members/MemberAddModal";
 import MemberEditModal from "../components/members/MemberEditModal";
+import { ConfirmationModal } from "../components/common";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -14,6 +15,8 @@ export default function MembersPage() {
   const [fetchError, setFetchError] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [editMember, setEditMember] = useState(null);
+  const [deleteMemberId, setDeleteMemberId] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Get user role from JWT
   const token = localStorage.getItem("token");
@@ -74,16 +77,24 @@ export default function MembersPage() {
   };
 
   const handleDeleteMember = async (id) => {
+    setDeleteLoading(true);
     try {
       await axios.delete(`${API_BASE}/api/member/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMembers((prev) => prev.filter((m) => m._id !== id));
+      setDeleteMemberId(null);
     } catch (err) {
       alert(
         err.response?.data?.message || err.message || "Failed to delete member"
       );
+    } finally {
+      setDeleteLoading(false);
     }
+  };
+
+  const handleDeleteClick = (id) => {
+    setDeleteMemberId(id);
   };
 
   return (
@@ -110,7 +121,7 @@ export default function MembersPage() {
             roles={roles}
             userRole={userRole}
             onEdit={setEditMember}
-            onDelete={handleDeleteMember}
+            onDelete={handleDeleteClick}
           />
         )}
         {showAddModal && (
@@ -128,6 +139,20 @@ export default function MembersPage() {
             onMemberEdited={handleEditMember}
           />
         )}
+
+        {/* Delete Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={!!deleteMemberId}
+          onClose={() => setDeleteMemberId(null)}
+          onConfirm={() => handleDeleteMember(deleteMemberId)}
+          title="Delete Member"
+          message="Are you sure you want to delete this member? This action cannot be undone and will remove them from all assigned projects and tasks."
+          confirmText="Delete Member"
+          cancelText="Cancel"
+          confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+          isDestructive={true}
+          loading={deleteLoading}
+        />
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { jwtDecode } from "jwt-decode";
 import RoleList from "../components/roles/RoleList";
 import RoleAddModal from "../components/roles/RoleAddModal";
 import RoleEditModal from "../components/roles/RoleEditModal";
+import { ConfirmationModal } from "../components/common";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -13,6 +14,8 @@ export default function RolesPage() {
   const [fetchError, setFetchError] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [editRole, setEditRole] = useState(null);
+  const [deleteRoleId, setDeleteRoleId] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Get user role from JWT
   const token = localStorage.getItem("token");
@@ -58,16 +61,24 @@ export default function RolesPage() {
   };
 
   const handleDeleteRole = async (id) => {
+    setDeleteLoading(true);
     try {
       await axios.delete(`${API_BASE}/api/role/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setRoles((prev) => prev.filter((r) => r._id !== id));
+      setDeleteRoleId(null);
     } catch (err) {
       alert(
         err.response?.data?.message || err.message || "Failed to delete role"
       );
+    } finally {
+      setDeleteLoading(false);
     }
+  };
+
+  const handleDeleteClick = (id) => {
+    setDeleteRoleId(id);
   };
 
   return (
@@ -93,7 +104,7 @@ export default function RolesPage() {
             roles={roles}
             userRole={userRole}
             onEdit={setEditRole}
-            onDelete={handleDeleteRole}
+            onDelete={handleDeleteClick}
           />
         )}
         {showAddModal && (
@@ -109,6 +120,20 @@ export default function RolesPage() {
             onRoleEdited={handleEditRole}
           />
         )}
+
+        {/* Delete Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={!!deleteRoleId}
+          onClose={() => setDeleteRoleId(null)}
+          onConfirm={() => handleDeleteRole(deleteRoleId)}
+          title="Delete Role"
+          message="Are you sure you want to delete this role? This action cannot be undone and may affect users with this role."
+          confirmText="Delete Role"
+          cancelText="Cancel"
+          confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+          isDestructive={true}
+          loading={deleteLoading}
+        />
       </div>
     </div>
   );

@@ -14,7 +14,7 @@ import taskTemplateRoutes from './routes/taskTemplateRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
 import subtaskRoutes from './routes/subtaskRoutes.js';
 import schedulingRoutes from './routes/schedulingRoutes.js';
-
+import employeeRoutes from './routes/employeeRoutes.js';
 
 import cors from "cors";
 dotenv.config();

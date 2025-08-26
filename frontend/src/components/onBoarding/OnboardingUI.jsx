@@ -42,26 +42,58 @@ export function OnboardingButton({
 
 export function OnboardingNavigation({
   onBack,
+  onPrevious,
   onNext,
-  backText = "← Back",
-  nextText = "Next",
+  onSkip,
+  backText,
+  previousLabel,
+  nextText,
+  nextLabel,
   loading = false,
+  nextDisabled = false,
+  showSkip = false,
+  nextButtonStyle = "",
 }) {
+  // Support both prop names for backward compatibility
+  const handleBack = onBack || onPrevious;
+  const backLabel = backText || previousLabel || "← Back";
+  const nextLabelText = nextText || nextLabel || "Next";
+
   return (
-    <div className="flex flex-col sm:flex-row justify-between mt-10 gap-2">
-      {onBack && (
-        <OnboardingButton
-          variant="secondary"
-          onClick={onBack}
-          disabled={loading}
-        >
-          {backText}
-        </OnboardingButton>
-      )}
+    <div className="flex flex-col sm:flex-row justify-between items-center mt-10 gap-4">
+      <div className="flex flex-col sm:flex-row gap-3 order-2 sm:order-1">
+        {handleBack && (
+          <OnboardingButton
+            variant="secondary"
+            onClick={handleBack}
+            disabled={loading}
+          >
+            {backLabel}
+          </OnboardingButton>
+        )}
+        {showSkip && onSkip && (
+          <OnboardingButton
+            variant="secondary"
+            onClick={onSkip}
+            disabled={loading}
+            title="Skip the onboarding process and go directly to dashboard"
+          >
+            Skip Onboarding
+          </OnboardingButton>
+        )}
+      </div>
+      
       {onNext && (
-        <OnboardingButton loading={loading} onClick={onNext}>
-          {nextText}
-        </OnboardingButton>
+        <div className="order-1 sm:order-2">
+          <OnboardingButton 
+            loading={loading} 
+            onClick={onNext}
+            disabled={nextDisabled}
+            style={nextButtonStyle ? { backgroundColor: nextButtonStyle.includes('bg-green') ? '#16a34a' : undefined } : undefined}
+          >
+            {nextLabelText}
+          </OnboardingButton>
+        </div>
       )}
     </div>
   );

@@ -33,7 +33,7 @@ export default function ResetPasswordPage() {
               a new one.
             </p>
             <button
-              onClick={() => (window.location.href = "/auth")}
+              onClick={() => (window.location.href = "/login")}
               className="w-full py-2 px-4 bg-green-600 text-white rounded font-medium font-sans hover:bg-green-800 transition"
             >
               Go to Login
