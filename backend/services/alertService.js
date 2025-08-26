@@ -1,5 +1,5 @@
 // services/alertService.js
-import { io } from "../utils/websocket.js"; // socket.io setup
+import { getIO } from "../utils/websocket.js"; // socket.io setup
 import Notification from "../models/Notification.js";
 
 /**
@@ -7,6 +7,7 @@ import Notification from "../models/Notification.js";
  */
 export const sendAlert = async ({ recipients, message, type, redirectTo, persist }) => {
   try {
+    const io = getIO();
     // 1. Real-time via WebSocket
     recipients.forEach(userId => {
       io.to(userId.toString()).emit("alert", {

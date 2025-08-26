@@ -1,10 +1,11 @@
 // websocket.js
-const { Server } = require("socket.io");
+import { Server } from "socket.io";
 import dotenv from "dotenv";
 dotenv.config();
+
 let io;
 
-function initWebSocket(server) {
+export function initWebSocket(server) {
   io = new Server(server, {
     cors: {
       origin: process.env.FRONTEND_URL, 
@@ -29,11 +30,9 @@ function initWebSocket(server) {
   return io;
 }
 
-function getIO() {
+export function getIO() {
   if (!io) {
     throw new Error("Socket.io not initialized!");
   }
   return io;
 }
-
-module.exports = { initWebSocket, getIO };
