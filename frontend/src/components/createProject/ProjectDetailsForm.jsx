@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import SubtaskAssignmentRow from "./SubtaskAssignmentRow";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -7,24 +7,63 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL;
 export default function ProjectDetailsForm({
   template,
   roles,
-  members,
   getMembersByRole,
   getSubtaskTemplateById,
   navigate,
 }) {
   const initialAssigned = useMemo(() => {
-    return template.subtasks.map((sub) => {
-      const tpl = typeof sub === "string" ? getSubtaskTemplateById(sub) : sub;
-      const candidates = getMembersByRole(tpl.role);
-      return {
-        subtaskTemplate: tpl._id,
-        name: tpl.name,
-        role: tpl.role,
-        assignedMember: candidates[0]?._id || "",
-        estimatedDurationDays: tpl.estimatedDurationDays,
-      };
-    });
+    if (!template?.subtasks) {
+      return [];
+    }
+
+    return template.subtasks
+      .map((sub, index) => {
+        let tpl;
+        if (typeof sub === "string") {
+          tpl = getSubtaskTemplateById(sub);
+        } else if (sub.subtaskTemplate) {
+          if (typeof sub.subtaskTemplate === "string") {
+            tpl = getSubtaskTemplateById(sub.subtaskTemplate);
+          } else if (typeof sub.subtaskTemplate === "object") {
+            tpl = sub.subtaskTemplate;
+          }
+        } else {
+          tpl = sub;
+        }
+
+        if (!tpl) {
+          console.error("Subtask template not found:", sub);
+          return null;
+        }
+
+        const roleId = typeof tpl.role === "object" ? tpl.role._id : tpl.role;
+        const candidates = getMembersByRole(roleId);
+
+        return {
+          subtaskTemplate: tpl._id,
+          name: tpl.name || `Subtask ${index + 1}`,
+          role: roleId,
+          assignedMember: candidates[0]?._id || "",
+          estimatedDurationDays: tpl.estimatedDurationDays || 1,
+        };
+      })
+      .filter(Boolean);
   }, [template, getMembersByRole, getSubtaskTemplateById]);
+
+  // Check for missing roles before allowing task creation
+  const missingRoles = useMemo(() => {
+    const missing = [];
+    initialAssigned.forEach((sub, index) => {
+      const availableMembers = getMembersByRole(sub.role);
+
+      if (availableMembers.length === 0) {
+        const roleName =
+          roles.find((r) => r._id === sub.role)?.name || "Unknown Role";
+        missing.push({ index: index + 1, roleName, subtaskName: sub.name });
+      }
+    });
+    return missing;
+  }, [initialAssigned, getMembersByRole, roles]);
 
   const [projectName, setProjectName] = useState("");
   const [priority, setPriority] = useState("moderate");
@@ -45,16 +84,29 @@ export default function ProjectDetailsForm({
       .slice(0, 10)
   );
   const [assigned, setAssigned] = useState(initialAssigned);
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState([]);
+  const [warnings, setWarnings] = useState([]);
   const [saving, setSaving] = useState(false);
 
+  // Sync assigned state with initialAssigned when it changes
+  useEffect(() => {
+    setAssigned(initialAssigned);
+  }, [initialAssigned]);
+
   const token = localStorage.getItem("token");
+
+  // Calculate min and max dates
+  const today = new Date().toISOString().slice(0, 10);
+  const twoYearsFromNow = new Date();
+  twoYearsFromNow.setFullYear(twoYearsFromNow.getFullYear() + 2);
+  const maxDate = twoYearsFromNow.toISOString().slice(0, 10);
 
   function handleMemberChange(idx, memberId) {
     setAssigned((prev) =>
       prev.map((s, i) => (i === idx ? { ...s, assignedMember: memberId } : s))
     );
   }
+
   function handleDurationChange(idx, newVal) {
     setAssigned((prev) =>
       prev.map((s, i) =>
@@ -62,29 +114,60 @@ export default function ProjectDetailsForm({
       )
     );
   }
+
   async function handleSubmit(e) {
     e.preventDefault();
+
+    // Clear previous errors/warnings
+    setErrors([]);
+    setWarnings([]);
+
+    // Client-side validation
+    const clientErrors = [];
+
     if (!projectName.trim()) {
-      setError("Project name is required.");
-      return;
+      clientErrors.push("Project name is required.");
     }
+
     if (!startDate || !deadline) {
-      setError("Start date and deadline are required.");
-      return;
+      clientErrors.push("Start date and deadline are required.");
     }
+
     if (new Date(deadline) < new Date(startDate)) {
-      setError("Deadline cannot be earlier than start date.");
+      clientErrors.push("Deadline cannot be earlier than start date.");
+    }
+
+    // Check for missing roles
+    if (missingRoles.length > 0) {
+      const roleNames = missingRoles.map((mr) => mr.roleName).join(", ");
+      clientErrors.push(
+        `Missing members for roles: ${roleNames}. Please create members with these roles first.`
+      );
+    }
+
+    // Check for unassigned subtasks
+    const unassignedSubtasks = assigned.filter((sub) => !sub.assignedMember);
+    if (unassignedSubtasks.length > 0) {
+      clientErrors.push(
+        `${unassignedSubtasks.length} subtask(s) have no assigned members.`
+      );
+    }
+
+    if (clientErrors.length > 0) {
+      setErrors(clientErrors);
       return;
     }
-    setError("");
+
     setSaving(true);
+
     try {
-      await axios.post(
+      const response = await axios.post(
         `${API_BASE}/api/task`,
         {
           taskTemplate: template._id,
-          name: projectName,
+          name: projectName.trim(),
           deadline,
+          startDate,
           subtasks: assigned.map(
             ({ subtaskTemplate, assignedMember, estimatedDurationDays }) => ({
               subtaskTemplate,
@@ -99,112 +182,197 @@ export default function ProjectDetailsForm({
           },
         }
       );
-      navigate("/projects");
+
+      // Handle success with potential warnings
+      if (response.data.warnings?.length > 0) {
+        setWarnings(response.data.warnings);
+        // Still navigate after a short delay to show warnings
+        setTimeout(() => {
+          navigate(`/projects/${response.data.task._id}`);
+        }, 2000);
+      } else {
+        // Navigate immediately if no warnings
+        navigate(`/projects/${response.data.task._id}`);
+      }
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          "Failed to create project. Please try again."
-      );
+      console.error("Task creation error:", err);
+
+      if (err.response?.data?.errors) {
+        // Backend validation errors
+        setErrors(err.response.data.errors);
+      } else if (err.response?.data?.message) {
+        // Single error message
+        setErrors([err.response.data.message]);
+      } else {
+        // Generic error
+        setErrors(["Failed to create project. Please try again."]);
+      }
+
+      if (err.response?.data?.warnings) {
+        setWarnings(err.response.data.warnings);
+      }
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-green-900 font-medium mb-1">
-            Project Name
-          </label>
-          <input
-            type="text"
-            className="w-full px-3 py-2 rounded border border-green-200"
-            placeholder="Enter project name"
-            value={projectName}
-            onChange={(e) => setProjectName(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-green-900 font-medium mb-1">
-            Priority
-          </label>
-          <select
-            className="w-full px-3 py-2 rounded border border-green-200"
-            value={priority}
-            onChange={(e) => setPriority(e.target.value)}
-            required
+    <div>
+      {/* Missing Roles Warning */}
+      {missingRoles.length > 0 && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="text-red-800 font-semibold mb-2">
+            Missing Required Roles
+          </div>
+          <div className="text-red-700 text-sm mb-3">
+            The following subtasks cannot be assigned because no members have
+            the required roles:
+          </div>
+          <ul className="list-disc list-inside text-red-700 text-sm mb-3">
+            {missingRoles.map((missing, idx) => (
+              <li key={idx}>
+                Subtask {missing.index}: "{missing.subtaskName}" requires role "
+                {missing.roleName}"
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
+            onClick={() => navigate("/members")}
           >
-            <option value="urgent">Urgent</option>
-            <option value="high">High</option>
-            <option value="moderate">Moderate</option>
-            <option value="low">Low</option>
-          </select>
+            Go to Members Page
+          </button>
         </div>
-        <div>
-          <label className="block text-green-900 font-medium mb-1">
-            Start Date
-          </label>
-          <input
-            type="date"
-            className="w-full px-3 py-2 rounded border border-green-200"
-            value={startDate}
-            max={deadline}
-            onChange={(e) => setStartDate(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-green-900 font-medium mb-1">
-            Deadline
-          </label>
-          <input
-            type="date"
-            className="w-full px-3 py-2 rounded border border-green-200"
-            value={deadline}
-            min={startDate}
-            onChange={(e) => setDeadline(e.target.value)}
-            required
-          />
-        </div>
-      </div>
-      <div>
-        <label className="block text-green-900 font-medium mb-2">
-          Subtasks & Assignment
-        </label>
-        <div className="space-y-4">
-          {assigned.map((sub, idx) => (
-            <SubtaskAssignmentRow
-              key={idx}
-              sub={sub}
-              idx={idx}
-              roles={roles}
-              members={members}
-              getMembersByRole={getMembersByRole}
-              onMemberChange={handleMemberChange}
-              onDurationChange={handleDurationChange}
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-green-900 font-medium mb-1">
+              Project Name
+            </label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 rounded border border-green-200"
+              placeholder="Enter project name"
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              required
             />
-          ))}
+          </div>
+          <div>
+            <label className="block text-green-900 font-medium mb-1">
+              Priority
+            </label>
+            <select
+              className="w-full px-3 py-2 rounded border border-green-200"
+              value={priority}
+              onChange={(e) => setPriority(e.target.value)}
+              required
+            >
+              <option value="urgent">Urgent</option>
+              <option value="high">High</option>
+              <option value="moderate">Moderate</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-green-900 font-medium mb-1">
+              Start Date
+            </label>
+            <input
+              type="date"
+              className="w-full px-3 py-2 rounded border border-green-200"
+              value={startDate}
+              min={today}
+              max={deadline}
+              onChange={(e) => setStartDate(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-green-900 font-medium mb-1">
+              Deadline
+            </label>
+            <input
+              type="date"
+              className="w-full px-3 py-2 rounded border border-green-200"
+              value={deadline}
+              min={startDate}
+              max={maxDate}
+              onChange={(e) => setDeadline(e.target.value)}
+              required
+            />
+          </div>
         </div>
-      </div>
-      {error && <div className="text-rose-700 text-sm">{error}</div>}
-      <div className="flex gap-2">
-        <button
-          type="button"
-          className="w-1/2 px-4 py-2 rounded bg-gray-100 text-green-900 font-semibold hover:bg-gray-200 transition"
-          onClick={() => window.history.back()}
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="w-1/2 px-4 py-2 rounded bg-green-700 text-white font-semibold hover:bg-green-800 transition"
-          disabled={saving}
-        >
-          {saving ? "Creating..." : "Create Project"}
-        </button>
-      </div>
-    </form>
+
+        <div>
+          <label className="block text-green-900 font-medium mb-2">
+            Subtasks & Assignment
+          </label>
+          <div className="space-y-4">
+            {assigned.map((sub, idx) => (
+              <SubtaskAssignmentRow
+                key={idx}
+                sub={sub}
+                idx={idx}
+                roles={roles}
+                getMembersByRole={getMembersByRole}
+                onMemberChange={handleMemberChange}
+                onDurationChange={handleDurationChange}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Error Messages */}
+        {errors.length > 0 && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="text-red-800 font-semibold mb-2">
+              Validation Errors:
+            </div>
+            <ul className="list-disc list-inside text-red-700 text-sm">
+              {errors.map((error, idx) => (
+                <li key={idx}>{error}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Warning Messages */}
+        {warnings.length > 0 && (
+          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="text-yellow-800 font-semibold mb-2">Warnings:</div>
+            <ul className="list-disc list-inside text-yellow-700 text-sm">
+              {warnings.map((warning, idx) => (
+                <li key={idx}>{warning}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <button
+            type="button"
+            className="w-1/2 px-4 py-2 rounded bg-gray-100 text-green-900 font-semibold hover:bg-gray-200 transition"
+            onClick={() => window.history.back()}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className={`w-1/2 px-4 py-2 rounded font-semibold transition ${
+              saving || missingRoles.length > 0
+                ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                : "bg-green-700 text-white hover:bg-green-800"
+            }`}
+            disabled={saving || missingRoles.length > 0}
+          >
+            {saving ? "Creating..." : "Create Project"}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }

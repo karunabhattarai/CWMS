@@ -25,11 +25,35 @@ export default function SubtaskModal({ subtask, onClose }) {
         <div className="mb-2">
           Deadline:{" "}
           <span>
-            {subtask.deadline
-              ? new Date(subtask.deadline).toLocaleDateString()
+            {subtask.earliestFinish
+              ? new Date(subtask.earliestFinish).toLocaleDateString()
+              : subtask.latestFinish
+              ? new Date(subtask.latestFinish).toLocaleDateString()
               : "—"}
           </span>
         </div>
+        <div className="mb-2">
+          Duration:{" "}
+          <span>
+            {subtask.estimatedDurationDays
+              ? `${subtask.estimatedDurationDays} day${
+                  subtask.estimatedDurationDays !== 1 ? "s" : ""
+                }`
+              : "—"}
+          </span>
+        </div>
+        {subtask.startedAt && (
+          <div className="mb-2">
+            Started At:{" "}
+            <span>{new Date(subtask.startedAt).toLocaleDateString()}</span>
+          </div>
+        )}
+        {subtask.completedAt && (
+          <div className="mb-2">
+            Completed At:{" "}
+            <span>{new Date(subtask.completedAt).toLocaleDateString()}</span>
+          </div>
+        )}
         {subtask.attachments?.length > 0 && (
           <div className="mb-2">
             Attachments:

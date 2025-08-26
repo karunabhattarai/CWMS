@@ -23,7 +23,12 @@ export default function OnboardingProjectStep({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [subtasks, setSubtasks] = useState([
-    { name: "", estimatedDurationDays: 1, role: roles[0]?._id || "" },
+    {
+      name: "",
+      estimatedDurationDays: 1,
+      role: roles[0]?._id || "",
+      dependencies: [],
+    },
   ]);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -39,6 +44,7 @@ export default function OnboardingProjectStep({
             name: sub.name,
             estimatedDurationDays: sub.days || sub.estimatedDurationDays || 1,
             role: sub.role || roles[0]?._id || "",
+            dependencies: sub.dependencies || [],
           }))
         );
       }
@@ -48,7 +54,12 @@ export default function OnboardingProjectStep({
       if (!description) setDescription("");
       if (subtasks.length === 0) {
         setSubtasks([
-          { name: "", estimatedDurationDays: 1, role: roles[0]?._id || "" },
+          {
+            name: "",
+            estimatedDurationDays: 1,
+            role: roles[0]?._id || "",
+            dependencies: [],
+          },
         ]);
       }
     }
@@ -60,16 +71,63 @@ export default function OnboardingProjectStep({
     );
   }
 
+  function handleDependencyChange(idx, dependencies) {
+    setSubtasks((prev) =>
+      prev.map((s, i) => (i === idx ? { ...s, dependencies } : s))
+    );
+  }
+
   function handleAddSubtask() {
     setSubtasks((prev) => [
       ...prev,
-      { name: "", estimatedDurationDays: 1, role: roles[0]?._id || "" },
+      {
+        name: "",
+        estimatedDurationDays: 1,
+        role: roles[0]?._id || "",
+        dependencies: [],
+      },
     ]);
   }
 
   function handleRemoveSubtask(idx) {
     if (subtasks.length === 1) return;
-    setSubtasks((prev) => prev.filter((_, i) => i !== idx));
+    setSubtasks((prev) => {
+      const newSubtasks = prev.filter((_, i) => i !== idx);
+      // Update dependencies to account for removed subtask
+      return newSubtasks.map((sub) => ({
+        ...sub,
+        dependencies: sub.dependencies
+          .filter((dep) => dep !== idx) // Remove the deleted subtask
+          .map((dep) => (dep > idx ? dep - 1 : dep)), // Adjust indices
+      }));
+    });
+  }
+
+  // Validate dependencies to prevent circular references
+  function validateDependencies() {
+    for (let i = 0; i < subtasks.length; i++) {
+      const visited = new Set();
+      const stack = [i];
+
+      while (stack.length > 0) {
+        const current = stack.pop();
+        if (visited.has(current)) {
+          return {
+            isValid: false,
+            message: `Circular dependency detected involving subtask ${
+              current + 1
+            }`,
+          };
+        }
+        visited.add(current);
+
+        const currentSubtask = subtasks[current];
+        if (currentSubtask?.dependencies) {
+          stack.push(...currentSubtask.dependencies);
+        }
+      }
+    }
+    return { isValid: true };
   }
 
   const validate = () => {
@@ -85,6 +143,13 @@ export default function OnboardingProjectStep({
         return "All subtasks must have name, duration, and role.";
       }
     }
+
+    // Validate dependencies
+    const depValidation = validateDependencies();
+    if (!depValidation.isValid) {
+      return depValidation.message;
+    }
+
     return "";
   };
 
@@ -113,6 +178,7 @@ export default function OnboardingProjectStep({
         );
         subpartIds.push({
           subtaskTemplate: subRes.data._id,
+          dependencies: sub.dependencies, // Include dependencies
         });
       }
 
@@ -135,6 +201,7 @@ export default function OnboardingProjectStep({
           name: sub.name,
           days: sub.estimatedDurationDays,
           role: sub.role,
+          dependencies: sub.dependencies,
         })),
         _id: tplRes.data._id,
         saved: true,
@@ -199,67 +266,131 @@ export default function OnboardingProjectStep({
 
       <div className="mt-6">
         <h3 className="text-lg font-semibold text-cyan-900 mb-4">Subtasks</h3>
-        <div className="space-y-3">
+        <div className="space-y-4">
           {subtasks.map((sub, idx) => (
-            <div
-              key={idx}
-              className="bg-[#efeee8] rounded-xl p-4 grid grid-cols-1 md:grid-cols-[2fr_1.5fr_1fr_auto] gap-3 items-center"
-            >
-              <input
-                type="text"
-                className="w-full px-3 py-2 rounded-xl border border-cyan-200 focus:ring-2 focus:ring-green-500 font-sans"
-                placeholder="Subtask name"
-                value={sub.name}
-                onChange={(e) =>
-                  handleSubtaskChange(idx, "name", e.target.value)
-                }
-                required
-              />
-              <select
-                className="w-full px-3 py-2 rounded-xl border border-cyan-200 focus:ring-2 focus:ring-green-500 font-sans"
-                value={sub.role}
-                onChange={(e) =>
-                  handleSubtaskChange(idx, "role", e.target.value)
-                }
-                required
-              >
-                <option value="">Assign Role</option>
-                {roles.map((role) => (
-                  <option key={role._id} value={role._id}>
-                    {role.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="w-full px-3 py-2 rounded-xl border border-cyan-200 focus:ring-2 focus:ring-green-500 font-sans"
-                value={sub.estimatedDurationDays}
-                onChange={(e) =>
-                  handleSubtaskChange(
-                    idx,
-                    "estimatedDurationDays",
-                    Number(e.target.value)
-                  )
-                }
-                required
-              >
-                {[...Array(14).keys()].map((i) => {
-                  const day = i + 1;
-                  return (
-                    <option key={day} value={day}>
-                      {day} day{day > 1 ? "s" : ""}
-                    </option>
-                  );
-                })}
-              </select>
-              <button
-                type="button"
-                className="text-red-500 hover:bg-red-50 rounded-full p-2 transition"
-                onClick={() => handleRemoveSubtask(idx)}
-                disabled={subtasks.length === 1}
-                title="Remove subtask"
-              >
-                ×
-              </button>
+            <div key={idx} className="bg-[#efeee8] rounded-xl p-4 space-y-3">
+              {/* Subtask Header */}
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-cyan-900">
+                  Subtask {idx + 1}
+                </span>
+                <button
+                  type="button"
+                  className="text-red-500 hover:bg-red-50 rounded-full p-2 transition"
+                  onClick={() => handleRemoveSubtask(idx)}
+                  disabled={subtasks.length === 1}
+                  title="Remove subtask"
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Basic Fields */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-cyan-700 text-sm font-medium mb-1">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 rounded-xl border border-cyan-200 focus:ring-2 focus:ring-green-500 font-sans"
+                    placeholder="Subtask name"
+                    value={sub.name}
+                    onChange={(e) =>
+                      handleSubtaskChange(idx, "name", e.target.value)
+                    }
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-cyan-700 text-sm font-medium mb-1">
+                    Role
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 rounded-xl border border-cyan-200 focus:ring-2 focus:ring-green-500 font-sans"
+                    value={sub.role}
+                    onChange={(e) =>
+                      handleSubtaskChange(idx, "role", e.target.value)
+                    }
+                    required
+                  >
+                    <option value="">Assign Role</option>
+                    {roles.map((role) => (
+                      <option key={role._id} value={role._id}>
+                        {role.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-cyan-700 text-sm font-medium mb-1">
+                    Duration
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 rounded-xl border border-cyan-200 focus:ring-2 focus:ring-green-500 font-sans"
+                    value={sub.estimatedDurationDays}
+                    onChange={(e) =>
+                      handleSubtaskChange(
+                        idx,
+                        "estimatedDurationDays",
+                        Number(e.target.value)
+                      )
+                    }
+                    required
+                  >
+                    {[...Array(14).keys()].map((i) => {
+                      const day = i + 1;
+                      return (
+                        <option key={day} value={day}>
+                          {day} day{day > 1 ? "s" : ""}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              </div>
+
+              {/* Dependencies Section */}
+              <div>
+                <label className="block text-cyan-700 text-sm font-medium mb-2">
+                  Dependencies (this subtask depends on)
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {subtasks.map((_, depIdx) => {
+                    if (depIdx === idx) return null; // Can't depend on itself
+
+                    const isChecked = sub.dependencies.includes(depIdx);
+                    const depSubtask = subtasks[depIdx];
+
+                    return (
+                      <label
+                        key={depIdx}
+                        className="flex items-center space-x-2 text-sm"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            const newDependencies = e.target.checked
+                              ? [...sub.dependencies, depIdx]
+                              : sub.dependencies.filter((d) => d !== depIdx);
+                            handleDependencyChange(idx, newDependencies);
+                          }}
+                          className="rounded border-cyan-300 text-cyan-600 focus:ring-cyan-500"
+                        />
+                        <span className="text-cyan-700">
+                          {depSubtask.name || `Subtask ${depIdx + 1}`}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+                {sub.dependencies.length === 0 && (
+                  <p className="text-cyan-600 text-xs mt-1">
+                    No dependencies (this subtask can start immediately)
+                  </p>
+                )}
+              </div>
             </div>
           ))}
         </div>

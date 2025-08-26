@@ -5,7 +5,13 @@ import SubtaskModal from "./SubtaskModal";
 const STATUS = ["Not Started", "In Progress", "Completed", "Backlog"];
 
 function getStatus(subtask) {
-  const deadlineDate = subtask.deadline && new Date(subtask.deadline);
+  // Use earliestFinish or latestFinish as the deadline
+  const deadlineDate = subtask.earliestFinish
+    ? new Date(subtask.earliestFinish)
+    : subtask.latestFinish
+    ? new Date(subtask.latestFinish)
+    : null;
+
   const now = new Date();
   const isBacklog =
     deadlineDate && deadlineDate < now && subtask.status !== "Completed";
@@ -61,9 +67,15 @@ export default function KanbanTab({ subtasks }) {
                           <div className="font-semibold">{subtask.name}</div>
                           <div className="text-xs text-gray-600">
                             Due:{" "}
-                            {subtask.deadline
-                              ? new Date(subtask.deadline).toLocaleDateString()
-                              : "—"}
+                            {subtask.earliestFinish
+                              ? new Date(
+                                  subtask.earliestFinish
+                                ).toLocaleDateString()
+                              : subtask.latestFinish
+                              ? new Date(
+                                  subtask.latestFinish
+                                ).toLocaleDateString()
+                              : "Unassigned"}
                           </div>
                           <div className="text-xs text-gray-600">
                             Assigned:{" "}

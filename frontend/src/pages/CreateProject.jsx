@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import ProjectTemplateTabs from "../components/createProject/ProjectTemplateTabs";
@@ -50,22 +50,39 @@ export default function CreateProjectPage() {
         setRoles(roleRes.data || []);
         setMembers(memberRes.data || []);
       } catch (error) {
+        console.error("Failed to load initial data:", error);
         alert("Project creation UI failed to load initial data.");
       } finally {
         setLoading(false);
       }
     }
     fetchInitialData();
-  }, []);
+  }, [token]);
 
-  const getTemplateById = (id) => templates.find((tpl) => tpl._id === id);
-  const getSubtaskTemplateById = (id) =>
-    subtaskTemplates.find((tpl) => tpl._id === id);
-  const getMembersByRole = (roleId) =>
-    members.filter((m) => m.roles.includes(roleId));
+  const getTemplateById = useCallback(
+    (id) => templates.find((tpl) => tpl._id === id),
+    [templates]
+  );
+  const getSubtaskTemplateById = useCallback(
+    (id) => subtaskTemplates.find((tpl) => tpl._id === id),
+    [subtaskTemplates]
+  );
+  const getMembersByRole = useCallback(
+    (roleId) => {
+      return members.filter((m) => {
+        // Handle both object roles and string roles
+        const hasRole = m.roles.some((role) => {
+          const memberRoleId = typeof role === "object" ? role._id : role;
+          return memberRoleId === roleId || memberRoleId === roleId.toString();
+        });
+        return hasRole;
+      });
+    },
+    [members]
+  );
   const template = useMemo(
     () => getTemplateById(selectedTemplateId),
-    [selectedTemplateId, templates]
+    [selectedTemplateId, getTemplateById]
   );
 
   // For new template creation
@@ -94,7 +111,6 @@ export default function CreateProjectPage() {
           <ProjectDetailsForm
             template={template}
             roles={roles}
-            members={members}
             getMembersByRole={getMembersByRole}
             getSubtaskTemplateById={getSubtaskTemplateById}
             navigate={navigate}
