@@ -4,10 +4,65 @@ import Task from '../models/Task.js';
 import Subtask from '../models/Subtask.js';
 import { getSchedulingSuggestion } from '../services/SchedulingSuggestionService.js';
 
-import { computePERT } from '../algorithms/pert.js';
-import { buildPERTExplanation } from '../utils/pertHelpers.js'; 
+import { computePERT } from "../algorithms/pert.js";
+import { buildPERTExplanation } from "../utils/pertHelpers.js";
 
+// Helper function to run CPM scheduling without HTTP response
+export const runCPMForTask = async (taskId) => {
+  const task = await Task.findById(taskId);
+  if (!task) throw new Error("Task not found");
 
+  const subtasks = await Subtask.find({ task: task._id }).populate(
+    "dependencies"
+  );
+
+  if (subtasks.length === 0) return; // No subtasks to schedule
+
+  // Format subtasks for CPM
+  const formattedSubtasks = subtasks.map((st) => ({
+    _id: st._id.toString(),
+    estimatedDurationDays: st.estimatedDurationDays,
+    dependencies: st.dependencies.map((d) => d._id.toString()),
+  }));
+
+  // Map _id to index for CPM input
+  const indexMap = new Map();
+  formattedSubtasks.forEach((st, i) => indexMap.set(st._id, i));
+
+  // Build CPM-ready array with indices instead of IDs for dependencies
+  const indexedSubtasks = formattedSubtasks.map((st) => ({
+    estimatedDurationDays: st.estimatedDurationDays,
+    dependencies: st.dependencies.map((depId) => indexMap.get(depId)),
+  }));
+
+  // Check circular dependencies
+  if (detectCircularDependency(indexedSubtasks)) {
+    console.warn("Circular dependency detected among subtasks - skipping CPM");
+    return;
+  }
+
+  // Run CPM
+  const cpmResult = computeCPM(indexedSubtasks);
+  const now = task.startDate || new Date();
+
+  // Save CPM results back to subtasks with calculated deadlines
+  await Promise.all(
+    subtasks.map((st, i) => {
+      const cmp = cpmResult[i];
+      st.earliestStart = new Date(now.getTime() + cmp.ES * 24 * 60 * 60 * 1000);
+      st.earliestFinish = new Date(
+        now.getTime() + cmp.EF * 24 * 60 * 60 * 1000
+      );
+      st.latestStart = new Date(now.getTime() + cmp.LS * 24 * 60 * 60 * 1000);
+      st.latestFinish = new Date(now.getTime() + cmp.LF * 24 * 60 * 60 * 1000);
+      st.float = cmp.slack;
+      st.isCritical = cmp.isCritical;
+      return st.save();
+    })
+  );
+
+  return cpmResult;
+};
 
 export const scheduleTask = async (req, res) => {
   try {

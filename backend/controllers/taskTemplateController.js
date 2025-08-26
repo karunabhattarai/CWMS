@@ -27,7 +27,7 @@ export const getAllTaskTemplates = async (req, res) => {
   try {
     const taskTemplates = await TaskTemplate.find({ company: req.user.company })
       .populate({
-        path: 'subtasks',
+        path: 'subtasks.subtaskTemplate',
         populate: {
           path: 'role',
           select: 'name'
