@@ -15,6 +15,11 @@ import taskRoutes from './routes/taskRoutes.js';
 import subtaskRoutes from './routes/subtaskRoutes.js';
 import schedulingRoutes from './routes/schedulingRoutes.js';
 
+import http from "http";
+import { initWebSocket } from "./utils/websocket.js";
+
+import alertRoutes from './routes/alertRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 
 import cors from "cors";
 dotenv.config();
@@ -46,8 +51,19 @@ app.use('/api/task-template', taskTemplateRoutes);
 app.use('/api/task', taskRoutes);
 app.use('/api/subtask', subtaskRoutes);
 app.use('/api/schedule', schedulingRoutes);
+app.use('/api/alert', alertRoutes);
+app.use('/api/notification', notificationRoutes);
+
+
+// Create HTTP server from Express app
+const server = http.createServer(app);
+
+// Initialize WebSocket server
+initWebSocket(server);
+
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });
 
