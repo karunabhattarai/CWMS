@@ -1,6 +1,6 @@
 import Notification from "../models/Notification.js";
 import User from "../models/User.js";
-
+import { getIO } from "../utils/websocket.js";
 /**
  * Create a new notification
  */
