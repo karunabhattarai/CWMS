@@ -51,7 +51,7 @@ export default function ProjectCard({
             e.stopPropagation();
             onDelete(project._id);
           }}
-          className="bg-rose-100 text-rose-700 hover:bg-rose-200"
+          className="bg-red-100 text-rose-700 hover:bg-rose-200"
         >
           Delete
         </Button>
