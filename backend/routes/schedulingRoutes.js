@@ -3,6 +3,6 @@ import { scheduleTask } from '../controllers/schedulingController.js';
 
 const router = express.Router();
 
-router.post('/:taskId', scheduleTask);
+router.get('/:taskId', scheduleTask);
 
 export default router;
