@@ -45,6 +45,34 @@ export const runCPMForTask = async (taskId) => {
   const cpmResult = computeCPM(indexedSubtasks);
   const now = task.startDate || new Date();
 
+
+
+  // Extract critical path subtasks    -- this added from the scheduleTask to mimic already made functionality
+  const criticalPathFull = subtasks.map((st, i) => ({
+    _id: st._id,
+    name: st.name || `Subtask ${i + 1}`,
+    duration: st.estimatedDurationDays,
+    float: cpmResult[i].slack,
+    isCritical: cpmResult[i].isCritical
+  }));
+
+  const levelized = levelizedTopologicalSort(indexedSubtasks);
+  const criticalPath = criticalPathFull.filter(st => st.isCritical);
+
+  // Deadline check
+  const criticalPathDuration = Math.max(...cpmResult.map(s => s.EF));
+  const deadline = new Date(task.deadline);
+  const deadlineDuration = Math.ceil((deadline - now) / (1000 * 60 * 60 * 24)); // in days
+
+  let suggestion = null;
+  let explanation = buildExplanation(levelized, subtasks);
+
+  if (criticalPathDuration > deadlineDuration) {
+    suggestion = getSchedulingSuggestion(criticalPathDuration, deadlineDuration, cpmResult);
+  }
+
+
+
   // Save CPM results back to subtasks with calculated deadlines
   await Promise.all(
     subtasks.map((st, i) => {
@@ -61,7 +89,20 @@ export const runCPMForTask = async (taskId) => {
     })
   );
 
-  return cpmResult;
+  return {
+    message: criticalPathDuration > deadlineDuration 
+      ? 'Deadline is too short for this task based on CPM'
+      : 'Scheduling completed successfully using CPM',
+    levelizedOrder: levelized,
+    cpmData: cpmResult,
+    criticalPath: {
+      subtasks: criticalPath,
+      totalDuration: criticalPathDuration
+    },
+    availableDays: deadlineDuration,
+    suggestion,
+    explanation
+  };
 };
 
 export const scheduleTask = async (req, res) => {
@@ -142,27 +183,6 @@ export const scheduleTask = async (req, res) => {
             explanation
         });
     }
-
-    // STEP 4: Save CPM results back to subtasks
-    // for (let i = 0; i < subtasks.length; i++) {
-    //   const st = subtasks[i];
-    //   const cpm = cpmResult[i];
-
-    //   const start = new Date(now.getTime() + cpm.ES * 24 * 60 * 60 * 1000);
-    //   const finish = new Date(now.getTime() + cpm.EF * 24 * 60 * 60 * 1000);
-    //   const latestStart = new Date(now.getTime() + cpm.LS * 24 * 60 * 60 * 1000);
-    //   const latestFinish = new Date(now.getTime() + cpm.LF * 24 * 60 * 60 * 1000);
-
-    //   st.earliestStart = start;
-    //   st.earliestFinish = finish;
-    //   st.latestStart = latestStart;
-    //   st.latestFinish = latestFinish;
-    //   st.float = cpm.slack;
-    //   st.isCritical = cpm.isCritical;
-
-    //   await st.save();
-    // }
-    // updated for parallel and better
     await Promise.all(
     subtasks.map((st, i) => {
         const cpm = cpmResult[i];

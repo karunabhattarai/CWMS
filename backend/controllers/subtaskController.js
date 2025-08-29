@@ -21,7 +21,7 @@ export const getSubtasksByTask = async (req, res) => {
   }
 };
 
-// changes status 
+// changes status only
 export const updateSubtask = async (req, res) => {
   try {
     const { id } = req.params;

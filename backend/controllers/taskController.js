@@ -8,7 +8,7 @@ import Member from "../models/Member.js";
 import mongoose from "mongoose";
 import { assignSubtaskDependencies } from "./subtaskController.js";
 import { sendNotification } from "../services/notificationService.js";
-
+import { taskAssignmentAlert, taskCreationAlert,deadlineUpdateAlert } from "../services/alertService.js";
 // import { resolveSubtaskDependenciesByName } from '../algorithms/cpm.js';
 
 // Validation helper functions
@@ -70,24 +70,13 @@ const validateTaskTemplate = async (templateId, company) => {
   const template = await TaskTemplate.findOne({
     _id: templateId,
     company,
-  }).populate("subtasks.subtaskTemplate");
+  });
 
   if (!template) {
     return {
       isValid: false,
       message: "Task template not found for this company",
     };
-  }
-
-  // Validate all subtask templates still exist
-  for (const sub of template.subtasks) {
-    const subtaskTemplate = await SubtaskTemplate.findById(sub.subtaskTemplate);
-    if (!subtaskTemplate) {
-      return {
-        isValid: false,
-        message: `Subtask template ${sub.subtaskTemplate} not found`,
-      };
-    }
   }
 
   return { isValid: true, template };
@@ -196,6 +185,10 @@ export const createTask = async (req, res) => {
       validationErrors.push("Deadline is required");
     }
 
+    if (!subtasks || subtasks.length === 0) {
+      validationErrors.push("Task must have at least one subtask.");
+    }
+
     // Validate deadline
     if (deadline) {
       const deadlineValidation = validateDeadline(deadline);
@@ -218,80 +211,21 @@ export const createTask = async (req, res) => {
       }
     }
 
-    // If using template, prepare subtasks data from template
+    // Only use raw subtasks from the request, ignore template subtasks
     let finalSubtasks = [];
-    if (templateData) {
-      // FIXED: Map frontend subtasks by subtaskTemplate ID for easy lookup
-      const frontendSubtaskMap = new Map();
-      subtasks.forEach((sub) => {
-        if (sub.subtaskTemplate) {
-          // Store both the original and string version as keys to handle any mismatch
-          frontendSubtaskMap.set(sub.subtaskTemplate, sub);
-          frontendSubtaskMap.set(sub.subtaskTemplate.toString(), sub);
+    for (const sub of subtasks) {
+      let memberDoc = null;
+      if (sub.assignedMember) {
+        try {
+          memberDoc = await Member.findById(sub.assignedMember);
+        } catch (e) {
+          memberDoc = null;
         }
-      });
-
-      console.log(
-        "Frontend subtask map keys:",
-        Array.from(frontendSubtaskMap.keys())
-      );
-
-      // Build final subtasks from template with frontend overrides
-      for (let i = 0; i < templateData.subtasks.length; i++) {
-        const templateSub = templateData.subtasks[i];
-        const subtaskTemplate = await SubtaskTemplate.findById(
-          templateSub.subtaskTemplate
-        );
-
-        if (!subtaskTemplate) {
-          validationErrors.push(
-            `Subtask template ${templateSub.subtaskTemplate} not found`
-          );
-          continue;
-        }
-
-        // FIXED: Use the subtaskTemplate._id (from the fetched document) to match the frontend
-        const templateId = subtaskTemplate._id.toString();
-        let frontendOverride = frontendSubtaskMap.get(templateId);
-
-        console.log(`Template ${i} - Looking for key: ${templateId}:`, {
-          availableKeys: Array.from(frontendSubtaskMap.keys()),
-          frontendOverride: frontendOverride
-            ? {
-                assignedMember: frontendOverride.assignedMember,
-                estimatedDurationDays: frontendOverride.estimatedDurationDays,
-              }
-            : null,
-        });
-
-        // FIXED: Better assignedMember assignment logic
-        let assignedMember = null;
-        if (frontendOverride?.assignedMember) {
-          const memberValue = frontendOverride.assignedMember.toString().trim();
-          if (
-            memberValue &&
-            memberValue !== "" &&
-            memberValue !== "null" &&
-            memberValue !== "undefined"
-          ) {
-            assignedMember = memberValue;
-          }
-        }
-
-        console.log(`Final assignedMember for subtask ${i}:`, assignedMember);
-
-        finalSubtasks.push({
-          subtaskTemplate: subtaskTemplate._id,
-          role: subtaskTemplate.role,
-          estimatedDurationDays:
-            frontendOverride?.estimatedDurationDays ||
-            subtaskTemplate.estimatedDurationDays,
-          assignedMember: assignedMember,
-          dependencies: templateSub.dependencies || [],
-        });
       }
-    } else {
-      finalSubtasks = subtasks;
+      finalSubtasks.push({
+        ...sub,
+        assignedMember: memberDoc ? memberDoc._id : null
+      });
     }
 
     console.log(
@@ -355,51 +289,55 @@ export const createTask = async (req, res) => {
 
   // Create subtasks
   const createdSubtasks = [];
-  const subtaskIndexToId = {}; // for dependency mapping
+  // const subtaskIndexToId = {}; // for dependency mapping
   const subtaskIndexToNewId = {}; // key: index in templateData.subtasks, value: new subtask._id
 
-  for (let i = 0; i < finalSubtasks.length; i++) {
-    const sub = finalSubtasks[i];
-    let subtask;
-
-    try {
-      if (sub.subtaskTemplate) {
-        const templateDoc = await SubtaskTemplate.findById(sub.subtaskTemplate);
-        if (!templateDoc) {
-          await session.abortTransaction();
-          session.endSession();
-          return res.status(400).json({
-            message: `Subtask template ${sub.subtaskTemplate} not found`,
+    for (let i = 0; i < finalSubtasks.length; i++) {
+      const sub = finalSubtasks[i];
+      let subtask;
+      try {
+        if (sub.subtaskTemplate) {
+          const templateDoc = await SubtaskTemplate.findById(sub.subtaskTemplate);
+          if (!templateDoc) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({
+              message: `Subtask template ${sub.subtaskTemplate} not found`,
+            });
+          }
+          subtask = new Subtask({
+            task: task._id,
+            name: sub.name || templateDoc.name,
+            subtaskTemplate: templateDoc._id,
+            assignedMember: sub.assignedMember || null,
+            estimatedDurationDays: sub.estimatedDurationDays || templateDoc.estimatedDurationDays,
+            role: sub.role || templateDoc.role,
+            description: sub.description || templateDoc.description,
+          });
+        } else {
+          // Manual subtask (no template)
+          subtask = new Subtask({
+            task: task._id,
+            name: sub.name,
+            assignedMember: sub.assignedMember || null,
+            estimatedDurationDays: sub.estimatedDurationDays || 1,
+            role: sub.role,
+            description: sub.description || '',
           });
         }
-
-        const assignedMember = sub.assignedMember || null;
-
-        subtask = new Subtask({
-          task: task._id,
-          name: templateDoc.name,
-          subtaskTemplate: templateDoc._id,
-          assignedMember,
-          estimatedDurationDays: sub.estimatedDurationDays || templateDoc.estimatedDurationDays,
-        });
-
         await subtask.save({ session });
         createdSubtasks.push(subtask._id);
-
-        // ✅ Map index to new ID
         subtaskIndexToNewId[i] = subtask._id;
+      } catch (error) {
+        console.error(`Subtask ${i} creation error:`, error);
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(500).json({
+          message: `Failed to create subtask ${i + 1}`,
+          error: error.message,
+        });
       }
-      // ... handle manual subtasks here if needed
-    } catch (error) {
-      console.error(`Subtask ${i} creation error:`, error);
-      await session.abortTransaction();
-      session.endSession();
-      return res.status(500).json({
-        message: `Failed to create subtask ${i + 1}`,
-        error: error.message,
-      });
     }
-  }
 
   // ✅ Remap dependencies from indices → actual subtask IDs
   for (let i = 0; i < finalSubtasks.length; i++) {
@@ -437,45 +375,24 @@ export const createTask = async (req, res) => {
       // Import and call the helper scheduling function
       const { runCPMForTask } = await import("./schedulingController.js");
       await runCPMForTask(task._id);
+      console.log("hi from outside  1");
     } catch (error) {
       console.error("Warning: Failed to run CPM scheduling:", error.message);
       // Don't fail the entire task creation if scheduling fails
     }
 
-    // Send notifications to assigned members
-    try {
-      const assignedMembers = [];
-      for (const subtask of finalSubtasks) {
-        if (subtask.assignedMember) {
-          // Get member details to find user ID
-          const member = await Member.findById(subtask.assignedMember).populate(
-            "user"
-          );
-          if (member && member.user) {
-            assignedMembers.push(member.user._id);
-          }
-        }
+      try {
+        console.log("hi from inside");
+        // Send assignment notifications using taskCreationAlert
+        await taskCreationAlert(task);
+      } catch (error) {
+        console.error(
+          "Warning: Failed to send task creation alerts:",
+          error.message
+        );
+        // Don't fail the entire task creation if notifications fail
       }
 
-      // Send notification if there are assigned members
-      if (assignedMembers.length > 0) {
-        const uniqueMembers = [
-          ...new Set(assignedMembers.map((id) => id.toString())),
-        ];
-        await sendNotification({
-          recipients: uniqueMembers,
-          message: `You have been assigned to task: "${task.name}"`,
-          redirectTo: `/tasks/${task._id}`,
-          type: "info",
-        });
-      }
-    } catch (error) {
-      console.error(
-        "Warning: Failed to send task assignment notifications:",
-        error.message
-      );
-      // Don't fail the entire task creation if notifications fail
-    }
 
     // Return success response with warnings if any
     const response = {
@@ -548,68 +465,111 @@ export const getTaskById = async (req, res) => {
       .json({ message: "Internal server error", error: error.message });
   }
 };
-
+// this will delete those subtasks which are nto sent hai, so just id bhayeni pathaunu parxa
 export const updateTask = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, deadline, subtasks = [] } = req.body;
+    const { name, deadline, subtasks } = req.body;
 
-    const task = await Task.findOne({ _id: id, company: req.user.company });
+    const task = await Task.findOne({ _id: id, company: req.user.company }).populate('subtasks');
     if (!task) return res.status(404).json({ message: "Task not found" });
 
-    // Update basic fields
-    task.name = name || task.name;
-    task.deadline = deadline || task.deadline;
+    let subtasksPresent = Array.isArray(subtasks) && subtasks.length > 0;
 
-    const newSubtaskIds = [];
+    // Update only task details if no subtasks provided
+    if (!subtasksPresent) {
+      if (name) task.name = name;
+      if (deadline) task.deadline = deadline;
+      await task.save();
+      return res.status(200).json(task);
+    }
+
+    // Map of existing subtasks by id
+    const existingSubtasksMap = new Map();
+    for (const sub of task.subtasks) {
+      existingSubtasksMap.set(sub._id.toString(), sub);
+    }
+
+    const updatedSubtaskIds = [];
     const subtaskIndexToId = {};
-
     for (let i = 0; i < subtasks.length; i++) {
       const s = subtasks[i];
-      let newSubtask;
+      let subtaskDoc;
+      let isNew = false;
+      let wasAssignedMember;
+      let wasDeadline;
 
-      if (s.subtaskTemplate) {
-        newSubtask = new Subtask({
-          task: task._id,
-          subtaskTemplate: s.subtaskTemplate,
-        });
-      } else if (s.role && s.name && s.estimatedDurationDays) {
-        newSubtask = new Subtask({
+      if (s._id && existingSubtasksMap.has(s._id)) {
+        // Update existing subtask
+        subtaskDoc = existingSubtasksMap.get(s._id);
+        wasAssignedMember = subtaskDoc.assignedMember?.toString();
+        wasDeadline = task.deadline;
+
+        if (s.name) subtaskDoc.name = s.name;
+        if (s.role) subtaskDoc.role = s.role;
+        if (s.description !== undefined) subtaskDoc.description = s.description;
+        if (s.estimatedDurationDays) subtaskDoc.estimatedDurationDays = s.estimatedDurationDays;
+        if (s.assignedMember) subtaskDoc.assignedMember = mongoose.Types.ObjectId(s.assignedMember);
+
+        await subtaskDoc.save();
+        updatedSubtaskIds.push(subtaskDoc._id);
+        subtaskIndexToId[i] = subtaskDoc._id;
+
+        // Notify reassignment
+        if (s.assignedMember && s.assignedMember !== wasAssignedMember) {
+          await taskAssignmentAlert(task, [s.assignedMember]);
+        }
+        // Notify deadline change
+        if (deadline && deadline !== wasDeadline && subtaskDoc.assignedMember) {
+          await deadlineUpdateAlert(task, [subtaskDoc.assignedMember]);
+        }
+      } else {
+        // Create new subtask
+        isNew = true;
+        subtaskDoc = new Subtask({
           task: task._id,
           name: s.name,
           role: s.role,
           description: s.description || "",
-          estimatedDurationDays: s.estimatedDurationDays,
+          estimatedDurationDays: s.estimatedDurationDays || 1,
+          assignedMember: s.assignedMember ? mongoose.Types.ObjectId(s.assignedMember) : null,
         });
-      } else {
-        return res.status(400).json({
-          message:
-            'Each subtask must have either "subtaskTemplate" OR all of "role", "name", "estimatedDurationDays"',
-        });
+        await subtaskDoc.save();
+        updatedSubtaskIds.push(subtaskDoc._id);
+        subtaskIndexToId[i] = subtaskDoc._id;
+        // Notify new assignment
+        if (subtaskDoc.assignedMember) {
+          await taskAssignmentAlert(task, [subtaskDoc.assignedMember]);
+        }
       }
-
-      await newSubtask.save();
-      newSubtaskIds.push(newSubtask._id);
-      subtaskIndexToId[i] = newSubtask._id;
     }
 
-    // Delete old subtasks (not in new list)
+    // Delete old subtasks not present in the new list
     await Subtask.deleteMany({
       task: task._id,
-      _id: { $nin: newSubtaskIds },
+      _id: { $nin: updatedSubtaskIds },
     });
 
-    task.subtasks = newSubtaskIds;
+    // Update task fields
+    if (name) task.name = name;
+    if (deadline) task.deadline = deadline;
+    task.subtasks = updatedSubtaskIds;
     await task.save();
 
     // Assign dependencies after all subtasks are saved
     await assignSubtaskDependencies(subtaskIndexToId, subtasks);
 
+    // Run CPM scheduling
+    try {
+      const { runCPMForTask } = await import("./schedulingController.js");
+      await runCPMForTask(task._id);
+    } catch (error) {
+      console.error("Warning: Failed to run CPM scheduling:", error.message);
+    }
+
     res.status(200).json(task);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Internal server error", error: error.message });
+    res.status(500).json({ message: "Internal server error", error: error.message });
   }
 };
 
