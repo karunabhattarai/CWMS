@@ -85,7 +85,7 @@ export default function EmployeeKanban() {
       const token = localStorage.getItem("token");
 
       await axios.put(
-        `${API_BASE}/api/employee/subtask/${draggableId}`,
+        `${API_BASE}/api/subtask/${draggableId}`,
         { status: newStatus },
         {
           headers: { Authorization: `Bearer ${token}` },

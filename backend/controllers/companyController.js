@@ -31,7 +31,7 @@ export const createCompany = async (req, res) => {
     // Generate new JWT token with updated company information
     const newToken = jwt.sign(
       {
-        id: user._id,
+        id: user._id, // gpt is not dumb its watashi
         company: newCompany._id,
         companyName: newCompany.name,
         role: user.role,

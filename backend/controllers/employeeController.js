@@ -240,66 +240,66 @@ export const getEmployeeProjects = async (req, res) => {
   }
 };
 
-// Update subtask status (employee can only update their own subtasks)
-export const updateEmployeeSubtask = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const { id } = req.params;
-    const { status, comment, attachments } = req.body;
+// // Update subtask status (employee can only update their own subtasks)
+// export const updateEmployeeSubtask = async (req, res) => {
+//   try {
+//     const userId = req.user._id;
+//     const { id } = req.params;
+//     const { status, comment, attachments } = req.body;
 
-    const user = await User.findById(userId).populate("member");
+//     const user = await User.findById(userId).populate("member");
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
 
-    // Ensure member exists for employee
-    let member = user.member;
-    if (!member && user.role === "employee") {
-      member = await ensureMemberExists(user);
-    }
+//     // Ensure member exists for employee
+//     let member = user.member;
+//     if (!member && user.role === "employee") {
+//       member = await ensureMemberExists(user);
+//     }
 
-    if (!member) {
-      return res
-        .status(404)
-        .json({ message: "Employee member record not found" });
-    }
+//     if (!member) {
+//       return res
+//         .status(404)
+//         .json({ message: "Employee member record not found" });
+//     }
 
-    const subtask = await Subtask.findOne({
-      _id: id,
-      assignedMember: member._id,
-    });
+//     const subtask = await Subtask.findOne({
+//       _id: id,
+//       assignedMember: member._id,
+//     });
 
-    if (!subtask) {
-      return res
-        .status(404)
-        .json({ message: "Subtask not found or not assigned to you" });
-    }
+//     if (!subtask) {
+//       return res
+//         .status(404)
+//         .json({ message: "Subtask not found or not assigned to you" });
+//     }
 
-    // Update allowed fields
-    if (status !== undefined) {
-      subtask.status = status;
+//     // Update allowed fields
+//     if (status !== undefined) {
+//       subtask.status = status;
 
-      // Update timestamps based on status
-      if (status === "In Progress" && !subtask.startedAt) {
-        subtask.startedAt = new Date();
-      } else if (status === "Completed" && !subtask.completedAt) {
-        subtask.completedAt = new Date();
-      }
-    }
+//       // Update timestamps based on status
+//       if (status === "In Progress" && !subtask.startedAt) {
+//         subtask.startedAt = new Date();
+//       } else if (status === "Completed" && !subtask.completedAt) {
+//         subtask.completedAt = new Date();
+//       }
+//     }
 
-    if (comment !== undefined) subtask.comment = comment;
-    if (attachments !== undefined) subtask.attachments = attachments;
+//     if (comment !== undefined) subtask.comment = comment;
+//     if (attachments !== undefined) subtask.attachments = attachments;
 
-    await subtask.save();
+//     await subtask.save();
 
-    const updatedSubtask = await Subtask.findById(id)
-      .populate("task", "name")
-      .populate("assignedMember", "name email");
+//     const updatedSubtask = await Subtask.findById(id)
+//       .populate("task", "name")
+//       .populate("assignedMember", "name email");
 
-    res.json(updatedSubtask);
-  } catch (error) {
-    console.error("Error updating subtask:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-};
+//     res.json(updatedSubtask);
+//   } catch (error) {
+//     console.error("Error updating subtask:", error);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };

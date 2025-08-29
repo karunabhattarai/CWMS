@@ -2,6 +2,8 @@
 
 import Subtask from '../models/Subtask.js';
 import Task from '../models/Task.js';
+import { taskStatusAlert, sendAlert } from '../services/alertService.js';
+import User from '../models/User.js';
 
 
 export const getSubtasksByTask = async (req, res) => {
@@ -39,6 +41,7 @@ export const updateSubtask = async (req, res) => {
     ) {
       const incompleteDeps = subtask.dependencies.filter(dep => dep.status !== 'Completed');
       if (incompleteDeps.length > 0) {
+        console.log("Cannot start subtask, dependencies incomplete:", incompleteDeps);
         return res.status(400).json({
           message: 'Cannot start this subtask until all dependencies are completed',
           incompleteDependencies: incompleteDeps.map(dep => ({
@@ -73,15 +76,48 @@ export const updateSubtask = async (req, res) => {
       const allCompleted = task.subtasks.every(st => st.status === 'Completed');
       const anyInProgress = task.subtasks.some(st => st.status === 'In Progress');
 
-      console.log(allCompleted);
-      console.log(anyInProgress);
+      // Notify all users with role 'manager' if all subtasks are completed and task is now completed
       if (allCompleted && task.status !== 'Completed') {
+        const managerUsers = await User.find({ role: 'manager' });
+        const managerIds = managerUsers.map(u => u._id);
+        await sendAlert({
+          recipients: managerIds,
+          message: `Task "${task.name}" is now completed. All subtasks are finished!`,
+          type: "info",
+          redirectTo: `/tasks/${task._id}`,
+          persist: true
+        });
         task.status = 'Completed';
       } else if (anyInProgress && task.status === 'Not Started') {
         task.status = 'In Progress';
       }
 
       await task.save();
+    }
+
+    // Notify assigned member(s) if their subtask is unlocked (all dependencies completed)
+    // Only trigger if this subtask was just completed
+    if (status === 'Completed') {
+      // Find subtasks that depend on this subtask
+      const dependentSubtasks = await Subtask.find({ dependencies: subtask._id });
+      for (const depSubtask of dependentSubtasks) {
+        // Check if all dependencies of depSubtask are completed
+        const depSubtaskPop = await Subtask.findById(depSubtask._id).populate('dependencies');
+        const allDepsCompleted = depSubtaskPop.dependencies.every(dep => dep.status === 'Completed');
+        if (allDepsCompleted && depSubtaskPop.status === 'Not Started' && depSubtaskPop.assignedMember) {
+          // Find user for assignedMember
+          const user = await User.findOne({ member: depSubtaskPop.assignedMember });
+          if (user) {
+            await sendAlert({
+              recipients: [user._id],
+              message: `Your subtask "${depSubtaskPop.name}" is now unlocked! All dependencies are completed. You may start working on it now.`,
+              type: "info",
+              redirectTo: `/subtasks/${depSubtaskPop._id}`,
+              persist: true
+            });
+          }
+        }
+      }
     }
 
     res.status(200).json(subtask);

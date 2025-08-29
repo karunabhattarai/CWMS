@@ -499,6 +499,14 @@ export const updateTask = async (req, res) => {
       let wasAssignedMember;
       let wasDeadline;
 
+      // If only _id is present, keep subtask as is
+      if (s._id && Object.keys(s).length === 1 && existingSubtasksMap.has(s._id)) {
+        subtaskDoc = existingSubtasksMap.get(s._id);
+        updatedSubtaskIds.push(subtaskDoc._id);
+        subtaskIndexToId[i] = subtaskDoc._id;
+        continue; // skip editing, just keep as is
+      }
+
       if (s._id && existingSubtasksMap.has(s._id)) {
         // Update existing subtask
         subtaskDoc = existingSubtasksMap.get(s._id);

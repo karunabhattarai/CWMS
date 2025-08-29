@@ -6,7 +6,6 @@ import {
   getEmployeeDashboard,
   getEmployeeSubtasks,
   getEmployeeProjects,
-  updateEmployeeSubtask,
 } from "../controllers/employeeController.js";
 
 const router = express.Router();
@@ -35,12 +34,12 @@ router.get(
   getEmployeeProjects
 );
 
-// Update employee's subtask
-router.put(
-  "/subtask/:id",
-  authMiddleware,
-  allowRoles("employee"),
-  updateEmployeeSubtask
-);
+// // Update employee's subtask
+// router.put(
+//   "/subtask/:id",
+//   authMiddleware,
+//   allowRoles("employee"),
+//   updateEmployeeSubtask
+// );
 
 export default router;

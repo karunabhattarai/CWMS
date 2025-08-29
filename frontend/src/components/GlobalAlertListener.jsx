@@ -1,0 +1,64 @@
+import { useEffect } from "react";
+import { useAuth } from "../context/useAuth";
+import { getSocket } from "../utils/websocket";
+import { useAlerts } from "../hooks/useAlerts";
+
+export default function GlobalAlertListener() {
+  const { user, loading } = useAuth();
+  const { showSuccess, showError, showWarning, showInfo } = useAlerts();
+
+  useEffect(() => {
+    // Don't connect socket until auth is loaded and user is available
+    if (loading || !user || !user.id) {
+      console.log("[GlobalAlertListener] Waiting for auth/user:", { loading, user: !!user, userId: user?.id });
+      return;
+    }
+
+    const socket = getSocket();
+    console.log("[GlobalAlertListener] Socket instance:", socket);
+    
+    console.log("[GlobalAlertListener] Emitting join for user:", user.id);
+    socket.emit("join", user.id);
+    
+    socket.on("connect", () => {
+      console.log("[GlobalAlertListener] Socket connected:", socket.id);
+      // Re-join room on reconnect
+      socket.emit("join", user.id);
+    });
+    
+    socket.on("alert", (alert) => {
+      console.log("[GlobalAlertListener] Received alert:", alert);
+      const truncatedMsg = alert.message.length > 50 ? alert.message.slice(0, 47) + "..." : alert.message;
+      
+      // Use the appropriate alert function based on type
+      switch (alert.type) {
+        case "success":
+          showSuccess(truncatedMsg);
+          break;
+        case "error":
+          showError(truncatedMsg);
+          break;
+        case "warning":
+          showWarning(truncatedMsg);
+          break;
+        case "critical":
+          showError(truncatedMsg); // Treat critical as error
+          break;
+        default:
+          showInfo(truncatedMsg);
+      }
+    });
+    
+    socket.on("disconnect", () => {
+      console.log("[GlobalAlertListener] Socket disconnected");
+    });
+
+    return () => {
+      socket.off("alert");
+      socket.off("connect");
+      socket.off("disconnect");
+    };
+  }, [user, loading, showSuccess, showError, showWarning, showInfo]);
+
+  return null;
+}
