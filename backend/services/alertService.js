@@ -269,7 +269,7 @@ export const hardDeadlineAlert = async (subtask, task) => {
       recipients: [user._id],
       message,
       type: "hard_deadline",
-      redirectTo: `/subtasks/${subtask._id}?action=submit_work`,
+      redirectTo: `/kanban`,
       persist: true,
     });
   } catch (error) {
