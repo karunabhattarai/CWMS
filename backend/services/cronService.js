@@ -31,11 +31,12 @@ class DynamicCronService {
     
     // TESTING: Every 10 minutes for quick testing
     // const job = cron.schedule('*/10 * * * *', async () => { 
-    //   console.log('🕐 Running 10-minute deadline check...');
-    const job = cron.schedule('*/1 * * * *', async () => {
-      console.log('🕐 Running 1-minute deadline check...');
-    // const job = cron.schedule('0 0 * * *', async () => {
-    //   console.log('🕐 Running daily deadline check at midnight...');
+    // //   console.log('🕐 Running 10-minute deadline check...');
+    
+    // const job = cron.schedule('*/1 * * * *', async () => {
+    //   console.log('🕐 Running 1-minute deadline check...');
+    const job = cron.schedule('0 0 * * *', async () => {
+      console.log('🕐 Running daily deadline check at midnight...');
       await this.processScheduledAlerts();
     }, {
       scheduled: true,
