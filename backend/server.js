@@ -20,6 +20,8 @@ import { initWebSocket } from "./utils/websocket.js";
 
 import alertRoutes from './routes/alertRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import deadlineRoutes from './routes/deadlineRoutes.js';
+import dynamicCronService from './services/cronService.js';
 
 import cors from "cors";
 dotenv.config();
@@ -53,6 +55,7 @@ app.use('/api/subtask', subtaskRoutes);
 app.use('/api/schedule', schedulingRoutes);
 app.use('/api/alert', alertRoutes);
 app.use('/api/notification', notificationRoutes);
+app.use('/api/deadline', deadlineRoutes);
 app.use("/api/employee", employeeRoutes);
 
 // Create HTTP server from Express app
@@ -61,6 +64,8 @@ const server = http.createServer(app);
 // Initialize WebSocket server
 initWebSocket(server);
 
+// Initialize Dynamic Cron Service after database connection
+dynamicCronService.initialize();
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {

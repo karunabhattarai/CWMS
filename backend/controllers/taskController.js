@@ -9,6 +9,7 @@ import mongoose from "mongoose";
 import { assignSubtaskDependencies } from "./subtaskController.js";
 import { sendNotification } from "../services/notificationService.js";
 import { taskAssignmentAlert, taskCreationAlert,deadlineUpdateAlert } from "../services/alertService.js";
+import dynamicCronService from "../services/cronService.js";
 // import { resolveSubtaskDependenciesByName } from '../algorithms/cpm.js';
 
 // Validation helper functions
@@ -400,6 +401,13 @@ export const createTask = async (req, res) => {
         // Don't fail the entire task creation if notifications fail
       }
 
+      // Update cron service with new task deadlines
+      try {
+        await dynamicCronService.updateCronListForTask(task._id);
+      } catch (error) {
+        console.error("Warning: Failed to update cron service:", error.message);
+      }
+
 
     // Return success response with warnings if any
     const response = {
@@ -590,6 +598,13 @@ export const updateTask = async (req, res) => {
       console.error("Warning: Failed to run CPM scheduling:", error.message);
     }
 
+    // Update cron service after task update
+    try {
+      await dynamicCronService.updateCronListForTask(task._id);
+    } catch (error) {
+      console.error("Warning: Failed to update cron service:", error.message);
+    }
+
     res.status(200).json(task);
   } catch (error) {
     res.status(500).json({ message: "Internal server error", error: error.message });
@@ -605,6 +620,13 @@ export const deleteTask = async (req, res) => {
 
     // Delete all subtasks
     await Subtask.deleteMany({ task: task._id });
+
+    // Remove from cron service
+    try {
+      dynamicCronService.removeCronEntriesForTask(task._id);
+    } catch (error) {
+      console.error("Warning: Failed to remove task from cron service:", error.message);
+    }
 
     // Delete the task
     await task.deleteOne();

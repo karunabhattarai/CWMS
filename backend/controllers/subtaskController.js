@@ -4,6 +4,7 @@ import Subtask from '../models/Subtask.js';
 import Task from '../models/Task.js';
 import { taskStatusAlert, sendAlert } from '../services/alertService.js';
 import User from '../models/User.js';
+import dynamicCronService from '../services/cronService.js';
 
 
 export const getSubtasksByTask = async (req, res) => {
@@ -23,12 +24,13 @@ export const getSubtasksByTask = async (req, res) => {
   }
 };
 
-// changes status only
+// changes status and other fields including attachments
 export const updateSubtask = async (req, res) => {
   try {
     const { id } = req.params;
     const { status, comment, assignedMember, attachments } = req.body;
-    console.log(status);
+    console.log("Updating subtask with:", { status, comment, assignedMember, attachments });
+    
     const subtask = await Subtask.findById(id).populate('dependencies');
     if (!subtask) return res.status(404).json({ message: 'Subtask not found' });
 
@@ -46,9 +48,9 @@ export const updateSubtask = async (req, res) => {
         await sendAlert({
           recipients: [req.user._id],
           message: 'Cannot start this subtask until all dependencies are completed',
-          type: "error",
+          type: "warning",
           redirectTo: `/subtasks/${subtask._id}`,
-          persist: true
+          persist: false
         });
         return res.status(400).json({
           message: 'Cannot start this subtask until all dependencies are completed',
@@ -60,7 +62,36 @@ export const updateSubtask = async (req, res) => {
         });
       }
     }
-    //update subtask fields
+
+    // 🚨 Prevent status change to "Completed" unless dependencies are completed
+    if (
+      status &&
+      status === 'Completed' &&
+      subtask.dependencies.length > 0
+    ) {
+      const incompleteDeps = subtask.dependencies.filter(dep => dep.status !== 'Completed');
+      if (incompleteDeps.length > 0) {
+        console.log("Cannot complete subtask, dependencies incomplete:", incompleteDeps);
+        // send alert
+        await sendAlert({
+          recipients: [req.user._id],
+          message: 'Cannot complete this subtask until all dependencies are completed',
+          type: "warning",
+          redirectTo: `/subtasks/${subtask._id}`,
+          persist: false
+        });
+        return res.status(400).json({
+          message: 'Cannot complete this subtask until all dependencies are completed',
+          incompleteDependencies: incompleteDeps.map(dep => ({
+            id: dep._id,
+            name: dep.name,
+            status: dep.status
+          }))
+        });
+      }
+    }
+
+    // Update subtask fields
     if (status) {
       if (status === 'In Progress' && !subtask.startedAt) {
         subtask.startedAt = new Date();
@@ -72,11 +103,49 @@ export const updateSubtask = async (req, res) => {
       console.log("Status updated to:", status);
     }
 
-    if (comment !== undefined) subtask.comment = comment;
-    if (assignedMember !== undefined) subtask.assignedMember = assignedMember;
-    if (attachments !== undefined) subtask.attachments = attachments;
+    if (comment !== undefined) {
+      subtask.comment = comment;
+      console.log("Comment updated to:", comment);
+    }
+    
+    if (assignedMember !== undefined) {
+      subtask.assignedMember = assignedMember;
+      console.log("Assigned member updated to:", assignedMember);
+    }
+    
+    // Handle attachments - validate format and update
+    if (attachments !== undefined) {
+      if (Array.isArray(attachments)) {
+        // Validate each attachment
+        const validAttachments = [];
+        for (const attachment of attachments) {
+          if (attachment.url && attachment.type && ['photo', 'pdf', 'link'].includes(attachment.type)) {
+            validAttachments.push({
+              url: attachment.url,
+              type: attachment.type
+            });
+          } else {
+            console.warn("Invalid attachment format:", attachment);
+          }
+        }
+        subtask.attachments = validAttachments;
+        console.log("Attachments updated:", validAttachments.length, "valid attachments");
+      } else {
+        console.warn("Attachments should be an array, received:", typeof attachments);
+        return res.status(400).json({ 
+          message: 'Attachments must be an array of objects with url and type properties' 
+        });
+      }
+    }
 
     await subtask.save();
+
+    // Update cron service when subtask status changes (especially when completed)
+    try {
+      await dynamicCronService.updateCronListForTask(subtask.task);
+    } catch (error) {
+      console.error("Warning: Failed to update cron service for subtask update:", error.message);
+    }
 
     // 🔄 Update parent Task status based on subtasks
     const task = await Task.findById(subtask.task).populate('subtasks'); // assumes Task has subtasks array

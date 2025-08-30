@@ -79,6 +79,16 @@ export default function EmployeeKanban() {
     if (source.droppableId === destination.droppableId) return;
 
     const newStatus = destination.droppableId;
+    const originalStatus = source.droppableId;
+
+    // Optimistically update the UI first (allow the drag to happen visually)
+    setSubtasks((prev) =>
+      prev.map((subtask) =>
+        subtask._id === draggableId
+          ? { ...subtask, status: newStatus }
+          : subtask
+      )
+    );
 
     try {
       setUpdating(true);
@@ -93,17 +103,21 @@ export default function EmployeeKanban() {
         }
       );
 
-      // Update local state
+      // If successful, the optimistic update is already done
+    } catch (error) {
+      console.error("Error updating subtask status:", error);
+      
+      // Revert the optimistic update on any error
       setSubtasks((prev) =>
         prev.map((subtask) =>
           subtask._id === draggableId
-            ? { ...subtask, status: newStatus }
+            ? { ...subtask, status: originalStatus }
             : subtask
         )
       );
-    } catch (error) {
-      console.error("Error updating subtask status:", error);
-      setError("Failed to update subtask status");
+      
+      // Don't show any frontend alerts - let the backend WebSocket alerts handle this
+      // The GlobalAlertListener will capture and display the socket alerts
     } finally {
       setUpdating(false);
     }
@@ -259,6 +273,11 @@ export default function EmployeeKanban() {
 }
 
 function SubtaskCard({ subtask, projectColor }) {
+  const hasIncompleteDependencies = subtask.dependencies && 
+    subtask.dependencies.length > 0 && 
+    subtask.dependencies.some(dep => dep.status !== 'Completed') &&
+    subtask.status === 'Not Started';
+
   return (
     <div className="space-y-2">
       {/* Project Tag */}
@@ -269,14 +288,17 @@ function SubtaskCard({ subtask, projectColor }) {
       </div>
 
       {/* Subtask Name */}
-      <div className="font-semibold text-gray-900">{subtask.name}</div>
+      <div className="font-semibold text-gray-900 text-left">{subtask.name}</div>
 
-      {/* Duration */}
-      <div className="text-xs text-gray-600">
+      {/* Dependencies Warning */}
+      {hasIncompleteDependencies && (
+        <div className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 px-1 py-0.5 rounded border border-amber-200 scale-80 text-left">
+          <span>Dependencies pending</span>
+        </div>
+      )}
+      <div className="text-xs text-gray-600 text-left">
         Duration: {subtask.estimatedDurationDays} day(s)
       </div>
-
-      {/* Comment preview if available */}
       {subtask.comment && (
         <div className="text-xs text-gray-500 line-clamp-2">
           {subtask.comment}
@@ -361,6 +383,38 @@ function SubtaskDetailModal({ subtask, onClose, projectColor }) {
               {subtask.comment || "No comments yet..."}
             </div>
           </div>
+
+          {/* Dependencies */}
+          {subtask.dependencies && subtask.dependencies.length > 0 && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Dependencies
+              </label>
+              <div className="space-y-2">
+                {subtask.dependencies.map((dep) => (
+                  <div
+                    key={dep._id || dep.id}
+                    className={`flex items-center justify-between p-2 rounded border text-sm ${
+                      dep.status === 'Completed'
+                        ? 'bg-green-50 border-green-200 text-green-800'
+                        : 'bg-red-50 border-red-200 text-red-800'
+                    }`}
+                  >
+                    <span>{dep.name}</span>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      dep.status === 'Completed'
+                        ? 'bg-green-100 text-green-800'
+                        : dep.status === 'In Progress'
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {dep.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Timestamps */}
           {(subtask.startedAt || subtask.completedAt) && (
