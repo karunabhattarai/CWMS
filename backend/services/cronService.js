@@ -58,29 +58,10 @@ class DynamicCronService {
   async addTaskDeadlinesToCronList(task) {
     const now = new Date();
     const deadline = new Date(task.deadline);
-    
-    // Calculate soft deadline (2 days before)
-    const softDeadline = new Date(deadline);
-    softDeadline.setDate(softDeadline.getDate() - 2);
 
-    // Add to database if deadlines are in the future
-    if (softDeadline > now) {
-      await CronJob.create({
-        cronId: `task_soft_${task._id}`,
-        alertType: 'task_soft_deadline',
-        scheduledDate: softDeadline,
-        taskId: task._id,
-        company: task.company,
-        originalDeadline: deadline,
-        metadata: {
-          taskName: task.name
-        }
-      });
-    }
-
+    // Only add hard deadline (when deadline is reached)
     if (deadline > now) {
       await CronJob.create({
-        cronId: `task_hard_${task._id}`,
         alertType: 'task_hard_deadline',
         scheduledDate: deadline,
         taskId: task._id,
@@ -111,7 +92,6 @@ class DynamicCronService {
     if (subtask.assignedMember && subtask.status !== 'Completed') {
       if (softDeadline > now) {
         await CronJob.create({
-          cronId: `subtask_soft_${subtask._id}`,
           alertType: 'subtask_soft_deadline',
           scheduledDate: softDeadline,
           taskId: task._id,
@@ -128,7 +108,6 @@ class DynamicCronService {
 
       if (estimatedDeadline > now) {
         await CronJob.create({
-          cronId: `subtask_hard_${subtask._id}`,
           alertType: 'subtask_hard_deadline',
           scheduledDate: estimatedDeadline,
           taskId: task._id,
@@ -195,34 +174,28 @@ class DynamicCronService {
           }
           break;
 
-        case 'task_soft_deadline':
-          // Send soft deadline alert to all assigned members
-          const taskSubtasks = await Subtask.find({ 
-            task: task._id, 
-            status: { $ne: 'Completed' },
-            assignedMember: { $exists: true }
-          });
-          
-          for (const sub of taskSubtasks) {
-            await softDeadlineAlert(sub, task);
-          }
-          break;
-
         case 'task_hard_deadline':
-          // Send hard deadline alert to all assigned members
-          const hardTaskSubtasks = await Subtask.find({ 
-            task: task._id, 
-            status: { $ne: 'Completed' },
-            assignedMember: { $exists: true }
+          // Send hard deadline alert to manager (not to individual members)
+          // This notifies manager that task deadline is reached/passed
+          const User = (await import("../models/User.js")).default;
+          const Member = (await import("../models/Member.js")).default;
+          
+          // Find manager in the company
+          const manager = await Member.findOne({ 
+            company: task.company,
+            role: { $in: ['manager', 'superadmin'] }
           });
           
-          for (const sub of hardTaskSubtasks) {
-            await hardDeadlineAlert(sub, task);
+          if (manager) {
+            const managerUser = await User.findOne({ member: manager._id });
+            if (managerUser) {
+              await managerEscalationAlert(null, task, managerUser);
+            }
           }
           break;
       }
     } catch (error) {
-      console.error(`❌ Error processing alert ${cronJob.cronId}:`, error);
+      console.error(`❌ Error processing alert ${cronJob._id}:`, error);
     }
   }
 
@@ -284,7 +257,7 @@ class DynamicCronService {
       const upcoming = await CronJob.find({ status: 'pending' })
         .sort({ scheduledDate: 1 })
         .limit(10)
-        .select('cronId alertType scheduledDate taskId subtaskId metadata');
+        .select('alertType scheduledDate taskId subtaskId metadata');
 
       return {
         totalScheduled,

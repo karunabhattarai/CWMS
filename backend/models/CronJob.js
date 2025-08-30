@@ -1,18 +1,10 @@
 import mongoose from 'mongoose';
 
 const cronJobSchema = new mongoose.Schema({
-  // Unique identifier for the cron job
-  cronId: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  
   // Type of alert to send
   alertType: {
     type: String,
     enum: [
-      'task_soft_deadline',
       'task_hard_deadline', 
       'subtask_soft_deadline',
       'subtask_hard_deadline'
