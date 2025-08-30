@@ -52,7 +52,7 @@ export default function AuthForm({
         showToast("Email verified successfully!", "success");
       }
     }
-  }, [type, showToast]);
+  }, []);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
