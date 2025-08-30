@@ -190,14 +190,8 @@ function ProjectCard({ project }) {
         {/* Actions */}
         <div className="space-y-2">
           <a
-            href={`/projects/${project._id}`}
-            className="block w-full text-center bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition font-medium"
-          >
-            View Project Details
-          </a>
-          <a
             href={`/projects/${project._id}?tab=gantt`}
-            className="block w-full text-center border border-green-600 text-green-600 py-2 rounded-lg hover:bg-green-50 transition font-medium"
+            className="block w-full text-center bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition font-medium"
           >
             View Gantt Chart
           </a>

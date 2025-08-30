@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useState, useMemo, useEffect } from "react";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import SubtaskAssignmentRow from "./SubtaskAssignmentRow";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -45,61 +46,72 @@ export default function ProjectDetailsForm({
           role: roleId,
           assignedMember: candidates[0]?._id || "",
           estimatedDurationDays: tpl.estimatedDurationDays || 1,
+          description: tpl.description || "",
+          dependencies: sub.dependencies || [],
         };
       })
       .filter(Boolean);
   }, [template, getMembersByRole, getSubtaskTemplateById]);
 
-  // Check for missing roles before allowing task creation
+  // State declarations
+  const [assigned, setAssigned] = useState(initialAssigned);
+  const [projectName, setProjectName] = useState("");
+  const [priority, setPriority] = useState("moderate");
+  const [startDate, setStartDate] = useState(() =>
+    new Date().toISOString().slice(0, 10)
+  );
+  const [errors, setErrors] = useState([]);
+  const [warnings, setWarnings] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState({
+    show: false,
+    idx: null,
+    subtaskName: "",
+  });
+  const [skipDeleteConfirmation, setSkipDeleteConfirmation] = useState(false);
+
+  // Computed values
+  const totalDays = useMemo(
+    () =>
+      (assigned || []).reduce(
+        (sum, s) => sum + (s.estimatedDurationDays || 0),
+        0
+      ),
+    [assigned]
+  );
+
+  const [deadline, setDeadline] = useState(() =>
+    new Date(Date.now() + totalDays * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10)
+  );
+
+  // Check for missing roles before allowing task creation (based on current assigned)
   const missingRoles = useMemo(() => {
     const missing = [];
-    initialAssigned.forEach((sub, index) => {
+    (assigned || []).forEach((sub, index) => {
       const availableMembers = getMembersByRole(sub.role);
 
-      if (availableMembers.length === 0) {
+      if (!sub.role || availableMembers.length === 0) {
         const roleName =
           roles.find((r) => r._id === sub.role)?.name || "Unknown Role";
         missing.push({ index: index + 1, roleName, subtaskName: sub.name });
       }
     });
     return missing;
-  }, [initialAssigned, getMembersByRole, roles]);
+  }, [assigned, getMembersByRole, roles]);
 
-  const [projectName, setProjectName] = useState("");
-  const [priority, setPriority] = useState("moderate");
-  const [startDate, setStartDate] = useState(() =>
-    new Date().toISOString().slice(0, 10)
-  );
-  const totalDays = useMemo(
-    () =>
-      initialAssigned.reduce(
-        (sum, s) => sum + (s.estimatedDurationDays || 0),
-        0
-      ),
-    [initialAssigned]
-  );
-  const [deadline, setDeadline] = useState(() =>
-    new Date(Date.now() + totalDays * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .slice(0, 10)
-  );
-  const [assigned, setAssigned] = useState(initialAssigned);
-  const [errors, setErrors] = useState([]);
-  const [warnings, setWarnings] = useState([]);
-  const [saving, setSaving] = useState(false);
+  // Constants
+  const token = localStorage.getItem("token");
+  const today = new Date().toISOString().slice(0, 10);
+  const twoYearsFromNow = new Date();
+  twoYearsFromNow.setFullYear(twoYearsFromNow.getFullYear() + 2);
+  const maxDate = twoYearsFromNow.toISOString().slice(0, 10);
 
   // Sync assigned state with initialAssigned when it changes
   useEffect(() => {
     setAssigned(initialAssigned);
   }, [initialAssigned]);
-
-  const token = localStorage.getItem("token");
-
-  // Calculate min and max dates
-  const today = new Date().toISOString().slice(0, 10);
-  const twoYearsFromNow = new Date();
-  twoYearsFromNow.setFullYear(twoYearsFromNow.getFullYear() + 2);
-  const maxDate = twoYearsFromNow.toISOString().slice(0, 10);
 
   function handleMemberChange(idx, memberId) {
     setAssigned((prev) =>
@@ -107,11 +119,202 @@ export default function ProjectDetailsForm({
     );
   }
 
+  function handleNameChange(idx, value) {
+    setAssigned((prev) =>
+      prev.map((s, i) => (i === idx ? { ...s, name: value } : s))
+    );
+  }
+
+  function handleRoleChange(idx, roleId) {
+    setAssigned((prev) =>
+      prev.map((s, i) =>
+        i === idx ? { ...s, role: roleId, assignedMember: "" } : s
+      )
+    );
+  }
+
+  function handleRemove(idx) {
+    if (skipDeleteConfirmation) {
+      // Skip confirmation and remove directly
+      setAssigned((prev) => {
+        const newAssigned = prev.filter((_, i) => i !== idx);
+        return newAssigned.map((sub) => ({
+          ...sub,
+          dependencies: sub.dependencies
+            .filter((dep) => dep !== idx)
+            .map((dep) => (dep > idx ? dep - 1 : dep)),
+        }));
+      });
+    } else {
+      // Show confirmation modal
+      const subtaskName = assigned[idx]?.name || `Subtask ${idx + 1}`;
+      setConfirmDelete({ show: true, idx, subtaskName });
+    }
+  }
+
+  function confirmRemoveSubtask() {
+    const { idx } = confirmDelete;
+    setAssigned((prev) => {
+      const newAssigned = prev.filter((_, i) => i !== idx);
+      // Update dependencies to account for removed subtask
+      return newAssigned.map((sub) => ({
+        ...sub,
+        dependencies: sub.dependencies
+          .filter((dep) => dep !== idx) // Remove the deleted subtask
+          .map((dep) => (dep > idx ? dep - 1 : dep)), // Adjust indices
+      }));
+    });
+    setConfirmDelete({ show: false, idx: null, subtaskName: "" });
+  }
+
+  function cancelRemoveSubtask() {
+    setConfirmDelete({ show: false, idx: null, subtaskName: "" });
+  }
+
+  function handleAddCustom() {
+    const newSub = {
+      subtaskTemplate: null,
+      name: "New Subtask",
+      role: roles[0]?._id || "",
+      assignedMember: "",
+      estimatedDurationDays: 1,
+      description: "",
+      dependencies: [],
+    };
+    setAssigned((prev) => [...(prev || []), newSub]);
+  }
+
   function handleDurationChange(idx, newVal) {
     setAssigned((prev) =>
       prev.map((s, i) =>
         i === idx ? { ...s, estimatedDurationDays: newVal } : s
       )
+    );
+  }
+
+  function handleDependencyChange(idx, dependencies) {
+    setAssigned((prev) =>
+      prev.map((s, i) => (i === idx ? { ...s, dependencies } : s))
+    );
+  }
+
+  // Validate dependencies to prevent circular references
+  function validateDependencies() {
+    for (let i = 0; i < assigned.length; i++) {
+      const visited = new Set();
+      const stack = [i];
+
+      while (stack.length > 0) {
+        const current = stack.pop();
+        if (visited.has(current)) {
+          return {
+            isValid: false,
+            message: `Circular dependency detected involving subtask ${
+              current + 1
+            }`,
+          };
+        }
+        visited.add(current);
+
+        const currentSubtask = assigned[current];
+        if (currentSubtask?.dependencies) {
+          stack.push(...currentSubtask.dependencies);
+        }
+      }
+    }
+    return { isValid: true };
+  }
+
+  // Handle drag and drop reordering
+  function handleDragEnd(result) {
+    if (!result.destination) return;
+
+    const { source, destination } = result;
+    if (source.index === destination.index) return;
+
+    setAssigned((prev) => {
+      const newItems = Array.from(prev);
+      const [reorderedItem] = newItems.splice(source.index, 1);
+      newItems.splice(destination.index, 0, reorderedItem);
+
+      // Update dependencies after reordering
+      const indexMap = {};
+      newItems.forEach((_, newIndex) => {
+        const oldIndex = prev.findIndex(
+          (item) =>
+            item ===
+            (newIndex < source.index
+              ? newItems[newIndex]
+              : newIndex === destination.index
+              ? reorderedItem
+              : newIndex > destination.index
+              ? newItems[newIndex]
+              : newItems[newIndex])
+        );
+        indexMap[oldIndex] = newIndex;
+      });
+
+      // Create proper index mapping
+      const properIndexMap = {};
+      for (let i = 0; i < prev.length; i++) {
+        if (i < source.index) {
+          properIndexMap[i] = i;
+        } else if (i === source.index) {
+          properIndexMap[i] = destination.index;
+        } else if (i <= destination.index) {
+          properIndexMap[i] = i - 1;
+        } else {
+          properIndexMap[i] = i;
+        }
+      }
+
+      // If moving down
+      if (source.index < destination.index) {
+        for (let i = source.index + 1; i <= destination.index; i++) {
+          properIndexMap[i] = i - 1;
+        }
+      }
+      // If moving up
+      else {
+        for (let i = destination.index; i < source.index; i++) {
+          properIndexMap[i] = i + 1;
+        }
+      }
+
+      // Update dependencies based on new indices
+      return newItems.map((item) => ({
+        ...item,
+        dependencies: item.dependencies
+          .map((dep) => properIndexMap[dep])
+          .filter((dep) => dep !== undefined)
+          .sort((a, b) => a - b),
+      }));
+    });
+  }
+
+  // Check for invalid dependencies after reordering
+  const invalidDependencies = useMemo(() => {
+    const invalid = [];
+    assigned.forEach((sub, idx) => {
+      const invalidDeps = sub.dependencies.filter((dep) => dep >= idx);
+      if (invalidDeps.length > 0) {
+        invalid.push({
+          subtaskIndex: idx,
+          subtaskName: sub.name,
+          invalidDeps: invalidDeps,
+        });
+      }
+    });
+    return invalid;
+  }, [assigned]);
+
+  // Auto-fix invalid dependencies
+  function fixInvalidDependencies() {
+    setAssigned((prev) =>
+      prev.map((sub, idx) => ({
+        ...sub,
+        dependencies: sub.dependencies.filter((dep) => dep < idx),
+      }))
     );
   }
 
@@ -153,6 +356,19 @@ export default function ProjectDetailsForm({
       );
     }
 
+    // Validate dependencies
+    const depValidation = validateDependencies();
+    if (!depValidation.isValid) {
+      clientErrors.push(depValidation.message);
+    }
+
+    // Check for invalid dependencies (dependencies on later subtasks)
+    if (invalidDependencies.length > 0) {
+      clientErrors.push(
+        "Some subtasks have invalid dependencies. Please fix dependencies that point to subtasks that come after them in the order."
+      );
+    }
+
     if (clientErrors.length > 0) {
       setErrors(clientErrors);
       return;
@@ -164,17 +380,19 @@ export default function ProjectDetailsForm({
       const response = await axios.post(
         `${API_BASE}/api/task`,
         {
-          taskTemplate: template._id,
+          taskTemplate: template?._id || null,
           name: projectName.trim(),
           deadline,
           startDate,
-          subtasks: assigned.map(
-            ({ subtaskTemplate, assignedMember, estimatedDurationDays }) => ({
-              subtaskTemplate,
-              assignedMember,
-              estimatedDurationDays,
-            })
-          ),
+          subtasks: (assigned || []).map((s) => ({
+            name: s.name,
+            role: s.role,
+            subtaskTemplate: s.subtaskTemplate || null,
+            assignedMember: s.assignedMember || null,
+            estimatedDurationDays: s.estimatedDurationDays || 1,
+            description: s.description || "",
+            dependencies: s.dependencies || [],
+          })),
         },
         {
           headers: {
@@ -218,6 +436,68 @@ export default function ProjectDetailsForm({
 
   return (
     <div>
+      {/* Custom Confirmation Modal */}
+      {confirmDelete.show && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                  <svg
+                    className="h-6 w-6 text-red-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div className="text-center">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Remove Subtask?
+                </h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  This action will remove "{confirmDelete.subtaskName}" and any
+                  dependencies on this subtask.
+                </p>
+                <label className="flex items-center justify-center gap-2 text-sm text-gray-600 mb-6">
+                  <input
+                    type="checkbox"
+                    className="rounded"
+                    onChange={(e) =>
+                      setSkipDeleteConfirmation(e.target.checked)
+                    }
+                  />
+                  Don't ask again for this session
+                </label>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  className="flex-1 bg-white border border-gray-300 rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+                  onClick={cancelRemoveSubtask}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="flex-1 bg-red-600 border border-transparent rounded-md px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                  onClick={confirmRemoveSubtask}
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Missing Roles Warning */}
       {missingRoles.length > 0 && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -311,18 +591,131 @@ export default function ProjectDetailsForm({
           <label className="block text-green-900 font-medium mb-2">
             Subtasks & Assignment
           </label>
-          <div className="space-y-4">
-            {assigned.map((sub, idx) => (
-              <SubtaskAssignmentRow
-                key={idx}
-                sub={sub}
-                idx={idx}
-                roles={roles}
-                getMembersByRole={getMembersByRole}
-                onMemberChange={handleMemberChange}
-                onDurationChange={handleDurationChange}
-              />
-            ))}
+
+          {/* Invalid Dependencies Warning - moved here to be more visible */}
+          {invalidDependencies.length > 0 && (
+            <div className="mb-4 p-3 bg-amber-50 border-l-4 border-amber-400 rounded-r-lg">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-5 w-5 text-amber-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-amber-800">
+                    Invalid Dependencies
+                  </h3>
+                  <div className="mt-1 text-sm text-amber-700">
+                    <p className="mb-2">Fix dependencies on later subtasks:</p>
+                    <ul className="list-disc list-inside space-y-1 mb-3">
+                      {invalidDependencies.map((invalid, idx) => (
+                        <li key={idx}>
+                          <strong>Subtask {invalid.subtaskIndex + 1}</strong> "
+                          {invalid.subtaskName}" → "
+                          {invalid.invalidDeps
+                            .map((dep) => {
+                              const depSubtask = assigned[dep];
+                              return depSubtask?.name || `Subtask ${dep + 1}`;
+                            })
+                            .join(", ")}
+                          "
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      type="button"
+                      onClick={fixInvalidDependencies}
+                      className="inline-flex items-center px-3 py-1.5 border border-amber-300 text-xs font-medium rounded text-amber-800 bg-amber-100 hover:bg-amber-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-colors"
+                    >
+                      <svg
+                        className="w-4 h-4 mr-1"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                      </svg>
+                      Auto-fix Dependencies
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="subtasks">
+              {(provided) => (
+                <div
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  className="space-y-4"
+                >
+                  {assigned.map((sub, idx) => (
+                    <Draggable
+                      key={`subtask-${idx}`}
+                      draggableId={`subtask-${idx}`}
+                      index={idx}
+                    >
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          className={
+                            snapshot.isDragging
+                              ? "transform rotate-1 shadow-lg"
+                              : ""
+                          }
+                        >
+                          <SubtaskAssignmentRow
+                            sub={sub}
+                            idx={idx}
+                            roles={roles}
+                            subtasks={assigned}
+                            getMembersByRole={getMembersByRole}
+                            onMemberChange={handleMemberChange}
+                            onDurationChange={handleDurationChange}
+                            onNameChange={handleNameChange}
+                            onRoleChange={handleRoleChange}
+                            onDependencyChange={handleDependencyChange}
+                            onRemove={handleRemove}
+                            dragHandleProps={provided.dragHandleProps}
+                            isDragging={snapshot.isDragging}
+                            hasInvalidDependencies={invalidDependencies.some(
+                              (invalid) => invalid.subtaskIndex === idx
+                            )}
+                          />
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
+
+          <div className="mt-4">
+            <button
+              type="button"
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 font-medium shadow-sm"
+              onClick={handleAddCustom}
+            >
+              + Add Custom Subtask
+            </button>
           </div>
         </div>
 

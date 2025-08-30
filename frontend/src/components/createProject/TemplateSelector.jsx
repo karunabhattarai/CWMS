@@ -38,37 +38,48 @@ export default function TemplateSelector({
           </div>
           <ul className="list-disc list-inside text-green-700 text-sm space-y-1">
             {template.subtasks.map((sub, idx) => {
-              // Handle the three cases: string, object with subtaskTemplate, fully populated subtask template
-              let subtaskTemplateId = null;
+              // Handle the different cases: string, object with subtaskTemplate, fully populated subtask template
               let subtaskTemplateData = null;
 
               if (typeof sub === "string") {
-                // It's just an ObjectId
-                subtaskTemplateId = sub;
-                subtaskTemplateData = getSubtaskTemplateById(subtaskTemplateId);
+                // It's just an ObjectId string
+                subtaskTemplateData = getSubtaskTemplateById(sub);
               } else if (sub && typeof sub === "object") {
-                if (sub.name && sub.estimatedDurationDays) {
+                if (sub.name && sub.estimatedDurationDays !== undefined) {
                   // Already a populated subtask template object
                   subtaskTemplateData = sub;
                 } else if (sub.subtaskTemplate) {
                   // It's an object with a reference to a subtask template
-                  subtaskTemplateId = sub.subtaskTemplate;
-                  subtaskTemplateData =
-                    getSubtaskTemplateById(subtaskTemplateId);
+                  if (typeof sub.subtaskTemplate === "string") {
+                    subtaskTemplateData = getSubtaskTemplateById(
+                      sub.subtaskTemplate
+                    );
+                  } else if (typeof sub.subtaskTemplate === "object") {
+                    subtaskTemplateData = sub.subtaskTemplate;
+                  }
+                } else if (sub._id) {
+                  // It might be a subtask template object with _id
+                  subtaskTemplateData = sub;
                 }
+              }
+
+              // Debug logging to help troubleshoot
+              if (!subtaskTemplateData) {
+                console.warn("Could not resolve subtask template for:", sub);
               }
 
               return (
                 <li key={idx}>
                   {subtaskTemplateData
-                    ? `${subtaskTemplateData.name} (${
-                        subtaskTemplateData.estimatedDurationDays
+                    ? `${subtaskTemplateData.name || `Subtask ${idx + 1}`} (${
+                        subtaskTemplateData.estimatedDurationDays || 1
                       } day${
-                        Number(subtaskTemplateData.estimatedDurationDays) > 1
+                        Number(subtaskTemplateData.estimatedDurationDays || 1) >
+                        1
                           ? "s"
                           : ""
                       })`
-                    : "Unknown subtask"}
+                    : `Subtask ${idx + 1} (Unknown template)`}
                 </li>
               );
             })}

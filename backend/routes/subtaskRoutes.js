@@ -14,7 +14,6 @@ const router = express.Router();
 router.get(
   "/task/:taskId",
   authMiddleware,
-  allowRoles("superadmin", "manager"),
   getSubtasksByTask
 );
 

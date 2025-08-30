@@ -13,6 +13,7 @@ import SmartDashboard from "../components/SmartDashboard";
 import SmartProjects from "../components/SmartProjects";
 import EmployeeKanban from "../pages/EmployeeKanban";
 import CreateProjectPage from "../pages/CreateProject";
+import EditProjectPage from "../pages/EditProject";
 import RolesPage from "../pages/RolesPage";
 import MembersPage from "../pages/MembersPage";
 import RegisterCompanyPage from "../pages/RegisterCompanyPage";
@@ -163,6 +164,18 @@ export const routes = [
         <RoleProtectedRoute allowedRoles={["superadmin", "manager"]}>
           <DashboardLayout>
             <CreateProjectPage />
+          </DashboardLayout>
+        </RoleProtectedRoute>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/editproject/:taskId",
+    element: (
+      <ProtectedRoute>
+        <RoleProtectedRoute allowedRoles={["superadmin", "manager"]}>
+          <DashboardLayout>
+            <EditProjectPage />
           </DashboardLayout>
         </RoleProtectedRoute>
       </ProtectedRoute>

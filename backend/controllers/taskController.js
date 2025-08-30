@@ -5,10 +5,15 @@ import TaskTemplate from "../models/TaskTemplate.js";
 import Subtask from "../models/Subtask.js";
 import SubtaskTemplate from "../models/SubtaskTemplate.js";
 import Member from "../models/Member.js";
+import User from "../models/User.js";
 import mongoose from "mongoose";
 import { assignSubtaskDependencies } from "./subtaskController.js";
 import { sendNotification } from "../services/notificationService.js";
-import { taskAssignmentAlert, taskCreationAlert,deadlineUpdateAlert } from "../services/alertService.js";
+import {
+  taskAssignmentAlert,
+  taskCreationAlert,
+  deadlineUpdateAlert,
+} from "../services/alertService.js";
 import dynamicCronService from "../services/cronService.js";
 // import { resolveSubtaskDependenciesByName } from '../algorithms/cpm.js';
 
@@ -152,7 +157,14 @@ export const createTask = async (req, res) => {
   session.startTransaction();
 
   try {
-    const { taskTemplate, name, deadline, priority, subtasks = [], startDate } = req.body;
+    const {
+      taskTemplate,
+      name,
+      deadline,
+      priority,
+      subtasks = [],
+      startDate,
+    } = req.body;
     const company = req.user.company;
 
     // Debug logging
@@ -192,8 +204,10 @@ export const createTask = async (req, res) => {
     }
 
     // Validate priority
-    if (priority && !['urgent', 'high', 'moderate', 'low'].includes(priority)) {
-      validationErrors.push("Priority must be one of: urgent, high, moderate, low");
+    if (priority && !["urgent", "high", "moderate", "low"].includes(priority)) {
+      validationErrors.push(
+        "Priority must be one of: urgent, high, moderate, low"
+      );
     }
 
     // Validate deadline
@@ -231,7 +245,7 @@ export const createTask = async (req, res) => {
       }
       finalSubtasks.push({
         ...sub,
-        assignedMember: memberDoc ? memberDoc._id : null
+        assignedMember: memberDoc ? memberDoc._id : null,
       });
     }
 
@@ -289,23 +303,25 @@ export const createTask = async (req, res) => {
       company,
       taskTemplate: taskTemplate || null,
       name: name.trim(),
-      priority: priority || 'moderate',
+      priority: priority || "moderate",
       deadline,
       startDate: startDate || new Date(),
     });
     await task.save({ session });
 
-  // Create subtasks
-  const createdSubtasks = [];
-  // const subtaskIndexToId = {}; // for dependency mapping
-  const subtaskIndexToNewId = {}; // key: index in templateData.subtasks, value: new subtask._id
+    // Create subtasks
+    const createdSubtasks = [];
+    // const subtaskIndexToId = {}; // for dependency mapping
+    const subtaskIndexToNewId = {}; // key: index in templateData.subtasks, value: new subtask._id
 
     for (let i = 0; i < finalSubtasks.length; i++) {
       const sub = finalSubtasks[i];
       let subtask;
       try {
         if (sub.subtaskTemplate) {
-          const templateDoc = await SubtaskTemplate.findById(sub.subtaskTemplate);
+          const templateDoc = await SubtaskTemplate.findById(
+            sub.subtaskTemplate
+          );
           if (!templateDoc) {
             await session.abortTransaction();
             session.endSession();
@@ -318,7 +334,8 @@ export const createTask = async (req, res) => {
             name: sub.name || templateDoc.name,
             subtaskTemplate: templateDoc._id,
             assignedMember: sub.assignedMember || null,
-            estimatedDurationDays: sub.estimatedDurationDays || templateDoc.estimatedDurationDays,
+            estimatedDurationDays:
+              sub.estimatedDurationDays || templateDoc.estimatedDurationDays,
             role: sub.role || templateDoc.role,
             description: sub.description || templateDoc.description,
           });
@@ -330,7 +347,7 @@ export const createTask = async (req, res) => {
             assignedMember: sub.assignedMember || null,
             estimatedDurationDays: sub.estimatedDurationDays || 1,
             role: sub.role,
-            description: sub.description || '',
+            description: sub.description || "",
           });
         }
         await subtask.save({ session });
@@ -347,23 +364,26 @@ export const createTask = async (req, res) => {
       }
     }
 
-  // ✅ Remap dependencies from indices → actual subtask IDs
-  for (let i = 0; i < finalSubtasks.length; i++) {
-    const sub = finalSubtasks[i];
-    if (Array.isArray(sub.dependencies)) {
-      sub.dependencies = sub.dependencies
-        .map(depIndex => subtaskIndexToNewId[depIndex])
-        .filter(Boolean); // remove undefined
+    // ✅ Remap dependencies from indices → actual subtask IDs
+    for (let i = 0; i < finalSubtasks.length; i++) {
+      const sub = finalSubtasks[i];
+      if (Array.isArray(sub.dependencies)) {
+        sub.dependencies = sub.dependencies
+          .map((depIndex) => subtaskIndexToNewId[depIndex])
+          .filter(Boolean); // remove undefined
+      }
     }
-  }
 
-  // Update subtasks in DB
-  for (let i = 0; i < finalSubtasks.length; i++) {
-    await Subtask.findByIdAndUpdate(subtaskIndexToNewId[i], {
-      dependencies: finalSubtasks[i].dependencies,
-    }, { session });
-  }
-
+    // Update subtasks in DB
+    for (let i = 0; i < finalSubtasks.length; i++) {
+      await Subtask.findByIdAndUpdate(
+        subtaskIndexToNewId[i],
+        {
+          dependencies: finalSubtasks[i].dependencies,
+        },
+        { session }
+      );
+    }
 
     // Assign dependencies
     if (finalSubtasks.length > 0) {
@@ -389,25 +409,24 @@ export const createTask = async (req, res) => {
       // Don't fail the entire task creation if scheduling fails
     }
 
-      try {
-        console.log("hi from inside");
-        // Send assignment notifications using taskCreationAlert
-        await taskCreationAlert(task);
-      } catch (error) {
-        console.error(
-          "Warning: Failed to send task creation alerts:",
-          error.message
-        );
-        // Don't fail the entire task creation if notifications fail
-      }
+    try {
+      console.log("hi from inside");
+      // Send assignment notifications using taskCreationAlert
+      await taskCreationAlert(task);
+    } catch (error) {
+      console.error(
+        "Warning: Failed to send task creation alerts:",
+        error.message
+      );
+      // Don't fail the entire task creation if notifications fail
+    }
 
-      // Update cron service with new task deadlines
-      try {
-        await dynamicCronService.updateCronListForTask(task._id);
-      } catch (error) {
-        console.error("Warning: Failed to update cron service:", error.message);
-      }
-
+    // Update cron service with new task deadlines
+    try {
+      await dynamicCronService.updateCronListForTask(task._id);
+    } catch (error) {
+      console.error("Warning: Failed to update cron service:", error.message);
+    }
 
     // Return success response with warnings if any
     const response = {
@@ -483,16 +502,36 @@ export const getTaskById = async (req, res) => {
 };
 // this will delete those subtasks which are nto sent hai, so just id bhayeni pathaunu parxa
 export const updateTask = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, deadline, priority, subtasks } = req.body;
+  const { id } = req.params;
+  const { name, deadline, startDate, priority, subtasks } = req.body;
 
-    const task = await Task.findOne({ _id: id, company: req.user.company }).populate('subtasks');
+  console.log("updateTask called with:", {
+    id,
+    name,
+    deadline,
+    startDate,
+    priority,
+    subtasksCount: subtasks?.length || 0,
+    subtasks: subtasks?.map((s, i) => ({
+      index: i,
+      _id: s._id,
+      name: s.name,
+      dependencies: s.dependencies,
+    })),
+  });
+
+  try {
+    const task = await Task.findOne({
+      _id: id,
+      company: req.user.company,
+    }).populate("subtasks");
     if (!task) return res.status(404).json({ message: "Task not found" });
 
     // Validate priority if provided
-    if (priority && !['urgent', 'high', 'moderate', 'low'].includes(priority)) {
-      return res.status(400).json({ message: "Priority must be one of: urgent, high, moderate, low" });
+    if (priority && !["urgent", "high", "moderate", "low"].includes(priority)) {
+      return res.status(400).json({
+        message: "Priority must be one of: urgent, high, moderate, low",
+      });
     }
 
     let subtasksPresent = Array.isArray(subtasks) && subtasks.length > 0;
@@ -522,7 +561,11 @@ export const updateTask = async (req, res) => {
       let wasDeadline;
 
       // If only _id is present, keep subtask as is
-      if (s._id && Object.keys(s).length === 1 && existingSubtasksMap.has(s._id)) {
+      if (
+        s._id &&
+        Object.keys(s).length === 1 &&
+        existingSubtasksMap.has(s._id)
+      ) {
         subtaskDoc = existingSubtasksMap.get(s._id);
         updatedSubtaskIds.push(subtaskDoc._id);
         subtaskIndexToId[i] = subtaskDoc._id;
@@ -534,24 +577,53 @@ export const updateTask = async (req, res) => {
         subtaskDoc = existingSubtasksMap.get(s._id);
         wasAssignedMember = subtaskDoc.assignedMember?.toString();
         wasDeadline = task.deadline;
+        const shouldNotifyReassignment =
+          s.assignedMember && s.assignedMember !== wasAssignedMember;
+
+        // Save original member ID for notification
+        const newMemberIdString = s.assignedMember;
 
         if (s.name) subtaskDoc.name = s.name;
-        if (s.role) subtaskDoc.role = s.role;
         if (s.description !== undefined) subtaskDoc.description = s.description;
-        if (s.estimatedDurationDays) subtaskDoc.estimatedDurationDays = s.estimatedDurationDays;
-        if (s.assignedMember) subtaskDoc.assignedMember = mongoose.Types.ObjectId(s.assignedMember);
+        if (s.estimatedDurationDays)
+          subtaskDoc.estimatedDurationDays = s.estimatedDurationDays;
+        if (s.assignedMember)
+          subtaskDoc.assignedMember = new mongoose.Types.ObjectId(
+            s.assignedMember
+          );
+        if (s.status !== undefined) subtaskDoc.status = s.status;
 
         await subtaskDoc.save();
         updatedSubtaskIds.push(subtaskDoc._id);
         subtaskIndexToId[i] = subtaskDoc._id;
 
-        // Notify reassignment
-        if (s.assignedMember && s.assignedMember !== wasAssignedMember) {
-          await taskAssignmentAlert(task, [s.assignedMember]);
+        // Notify reassignment - now using the subtaskDoc.assignedMember like in the new subtask case
+        if (shouldNotifyReassignment) {
+          console.log(
+            "Sending notification for reassignment",
+            newMemberIdString
+          );
+
+          // Find the User ID associated with this Member ID
+          const associatedUser = await User.findOne({
+            member: subtaskDoc.assignedMember,
+          });
+          if (associatedUser) {
+            console.log("Found associated user:", associatedUser._id);
+            await taskAssignmentAlert(task, [associatedUser._id]);
+          } else {
+            console.log("No user found for member:", subtaskDoc.assignedMember);
+          }
         }
         // Notify deadline change
         if (deadline && deadline !== wasDeadline && subtaskDoc.assignedMember) {
-          await deadlineUpdateAlert(task, [subtaskDoc.assignedMember]);
+          // Find the User ID associated with this Member ID
+          const associatedUser = await User.findOne({
+            member: subtaskDoc.assignedMember,
+          });
+          if (associatedUser) {
+            await deadlineUpdateAlert(task, [associatedUser._id]);
+          }
         }
       } else {
         // Create new subtask
@@ -559,17 +631,38 @@ export const updateTask = async (req, res) => {
         subtaskDoc = new Subtask({
           task: task._id,
           name: s.name,
-          role: s.role,
           description: s.description || "",
           estimatedDurationDays: s.estimatedDurationDays || 1,
-          assignedMember: s.assignedMember ? mongoose.Types.ObjectId(s.assignedMember) : null,
+          assignedMember: s.assignedMember
+            ? new mongoose.Types.ObjectId(s.assignedMember)
+            : null,
+          status: s.status || "Not Started",
         });
         await subtaskDoc.save();
         updatedSubtaskIds.push(subtaskDoc._id);
         subtaskIndexToId[i] = subtaskDoc._id;
         // Notify new assignment
         if (subtaskDoc.assignedMember) {
-          await taskAssignmentAlert(task, [subtaskDoc.assignedMember]);
+          console.log(
+            "Sending notification for new assignment",
+            subtaskDoc.assignedMember
+          );
+          // Find the User ID associated with this Member ID
+          const associatedUser = await User.findOne({
+            member: subtaskDoc.assignedMember,
+          });
+          if (associatedUser) {
+            console.log(
+              "Found associated user for new assignment:",
+              associatedUser._id
+            );
+            await taskAssignmentAlert(task, [associatedUser._id]);
+          } else {
+            console.log(
+              "No user found for new member:",
+              subtaskDoc.assignedMember
+            );
+          }
         }
       }
     }
@@ -583,12 +676,21 @@ export const updateTask = async (req, res) => {
     // Update task fields
     if (name) task.name = name;
     if (deadline) task.deadline = deadline;
+    if (startDate) task.startDate = startDate;
     if (priority) task.priority = priority;
     task.subtasks = updatedSubtaskIds;
     await task.save();
 
     // Assign dependencies after all subtasks are saved
-    await assignSubtaskDependencies(subtaskIndexToId, subtasks);
+    try {
+      console.log("About to assign dependencies...");
+      await assignSubtaskDependencies(subtaskIndexToId, subtasks);
+      console.log("Dependencies assigned successfully");
+    } catch (depError) {
+      console.error("Error assigning dependencies:", depError);
+      console.error("Stack trace:", depError.stack);
+      // Don't fail the entire request for dependency errors
+    }
 
     // Run CPM scheduling
     try {
@@ -607,7 +709,11 @@ export const updateTask = async (req, res) => {
 
     res.status(200).json(task);
   } catch (error) {
-    res.status(500).json({ message: "Internal server error", error: error.message });
+    console.error("updateTask error:", error);
+    console.error("Stack trace:", error.stack);
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: error.message });
   }
 };
 
@@ -625,7 +731,10 @@ export const deleteTask = async (req, res) => {
     try {
       dynamicCronService.removeCronEntriesForTask(task._id);
     } catch (error) {
-      console.error("Warning: Failed to remove task from cron service:", error.message);
+      console.error(
+        "Warning: Failed to remove task from cron service:",
+        error.message
+      );
     }
 
     // Delete the task

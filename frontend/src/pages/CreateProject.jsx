@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import ProjectTemplateTabs from "../components/createProject/ProjectTemplateTabs";
 import ProjectDetailsForm from "../components/createProject/ProjectDetailsForm";
+import { useToast } from "../context/ToastContext";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -16,6 +17,7 @@ export default function CreateProjectPage() {
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
+  const { showToast } = useToast();
 
   useEffect(() => {
     async function fetchInitialData() {
@@ -51,7 +53,7 @@ export default function CreateProjectPage() {
         setMembers(memberRes.data || []);
       } catch (error) {
         console.error("Failed to load initial data:", error);
-        alert("Project creation UI failed to load initial data.");
+        showToast("Project creation UI failed to load initial data.");
       } finally {
         setLoading(false);
       }

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import ProjectList from "../components/projects/ProjectList";
 import ProjectSearchFilter from "../components/projects/ProjectSearchFilter";
+import { useToast } from "../context/ToastContext";
 
 const statusStyles = {
   completed: "bg-green-100 text-green-700 border border-green-200",
@@ -42,6 +43,7 @@ export default function ProjectsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateSort, setDateSort] = useState("newest");
   const [error, setError] = useState("");
+  const { showToast } = useToast();
 
   const token = localStorage.getItem("token");
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -79,7 +81,7 @@ export default function ProjectsPage() {
       setTasks((prev) => prev.filter((t) => t._id !== taskId));
     } catch (e) {
       console.log(e);
-      alert(
+      showToast(
         e.response?.data?.message || e.message || "Failed to delete project"
       );
     }

@@ -1,16 +1,41 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import axios from "axios";
+import { useAuth } from "../hooks/useAuth";
 import KanbanTab from "../components/taskDetails/KanbanTab";
 import GanttTab from "../components/taskDetails/GanttTab";
 
 export default function TaskDetailsPage() {
   const { taskId } = useParams();
+  const location = useLocation();
+  const { user } = useAuth();
   const [task, setTask] = useState(null);
   const [subtasks, setSubtasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState("kanban");
+
+  // Check if user can access Kanban tab (only managers and superadmins)
+  const canAccessKanban =
+    user && (user.role === "manager" || user.role === "superadmin");
+
+  // Get initial tab from URL query params or default based on access
+  const getInitialTab = () => {
+    const searchParams = new URLSearchParams(location.search);
+    const tabFromUrl = searchParams.get("tab");
+
+    // If user can't access kanban, force gantt tab
+    if (!canAccessKanban) {
+      return "gantt";
+    }
+
+    // Only allow valid tab values
+    if (tabFromUrl === "kanban" || tabFromUrl === "gantt") {
+      return tabFromUrl;
+    }
+    return "kanban";
+  };
+
+  const [activeTab, setActiveTab] = useState(getInitialTab);
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
   useEffect(() => {
     const fetchData = async () => {
@@ -19,7 +44,7 @@ export default function TaskDetailsPage() {
       try {
         const token = localStorage.getItem("token");
         if (!token) {
-          setError("User not authenticated"); 
+          setError("User not authenticated");
           setLoading(false);
           return;
         }
@@ -39,7 +64,6 @@ export default function TaskDetailsPage() {
 
         setTask(taskRes.data);
         setSubtasks(subtasksRes.data);
-
       } catch (err) {
         setError(
           err.response?.data?.message || err.message || "Failed to fetch data"
@@ -50,7 +74,7 @@ export default function TaskDetailsPage() {
     };
 
     fetchData();
-  }, [taskId]);
+  }, [taskId, API_BASE]);
 
   if (loading) {
     return (
@@ -83,16 +107,18 @@ export default function TaskDetailsPage() {
           {task.name}
         </h1>
         <div className="flex border-b mb-4">
-          <button
-            className={`py-2 px-4 rounded-t-lg ${
-              activeTab === "kanban"
-                ? "bg-white text-green-800 font-bold"
-                : "bg-gray-200 text-gray-700"
-            }`}
-            onClick={() => setActiveTab("kanban")}
-          >
-            Kanban
-          </button>
+          {canAccessKanban && (
+            <button
+              className={`py-2 px-4 rounded-t-lg ${
+                activeTab === "kanban"
+                  ? "bg-white text-green-800 font-bold"
+                  : "bg-gray-200 text-gray-700"
+              }`}
+              onClick={() => setActiveTab("kanban")}
+            >
+              Kanban
+            </button>
+          )}
           <button
             className={`py-2 px-4 rounded-t-lg ${
               activeTab === "gantt"
@@ -104,7 +130,7 @@ export default function TaskDetailsPage() {
             Gantt Chart
           </button>
         </div>
-        {activeTab === "kanban" ? (
+        {activeTab === "kanban" && canAccessKanban ? (
           <KanbanTab subtasks={subtasks} />
         ) : (
           <GanttTab subtasks={subtasks} />
