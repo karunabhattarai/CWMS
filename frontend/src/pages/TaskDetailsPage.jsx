@@ -131,7 +131,7 @@ export default function TaskDetailsPage() {
           </button>
         </div>
         {activeTab === "kanban" && canAccessKanban ? (
-          <KanbanTab subtasks={subtasks} />
+          <KanbanTab subtasks={subtasks} taskName={task?.name} />
         ) : (
           <GanttTab subtasks={subtasks} />
         )}

@@ -996,7 +996,7 @@ function AttachmentItem({ attachment, showDownload = false, showRemove = false, 
           className="text-blue-600 hover:text-blue-800 p-1.5 rounded hover:bg-blue-50 transition-colors"
           title={attachment.type === 'link' ? 'Open link' : 'View file'}
         >
-          {attachment.type === 'link' ? '🔗' : '👁️'}
+          {attachment.type === 'link' ? '🔗' : 'view'}
         </button>
 
         {/* Download Button */}
