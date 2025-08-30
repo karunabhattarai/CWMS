@@ -221,7 +221,7 @@ export const updateSubtask = async (req, res) => {
           recipients: managerIds,
           message: `Task "${task.name}" is now completed. All subtasks are finished!`,
           type: "info",
-          redirectTo: `/tasks/${task._id}`,
+          redirectTo: `/projects/${task._id}`,
           persist: true,
         });
         task.status = "Completed";

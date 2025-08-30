@@ -59,7 +59,7 @@ export const taskAssignmentAlert = async (task, assignedUsers) => {
   console.log("assignedUsers:", assignedUsers);
 
   const message = `You have been assigned to task: "${task.name}"`;
-  const redirectTo = `/tasks/${task._id}`;
+  const redirectTo = `/projects/${task._id}`;
   await sendAlert({
     recipients: assignedUsers,
     message,
@@ -118,7 +118,7 @@ export const taskCreationAlert = async (task) => {
           ? " ⚠️ This task is CRITICAL! Any delay will delay the project."
           : "");
       const type = subtask.isCritical ? "critical" : "info";
-      const redirectTo = `/tasks/${fullTask._id}`;
+      const redirectTo = `/projects/${fullTask._id}`;
       await sendAlert({
         recipients: [recipientId],
         message,
@@ -140,7 +140,7 @@ export const deadlineUpdateAlert = async (task, affectedUsers) => {
   const deadline = task.deadline || task.dueDate; // Handle both field names
   const deadlineStr = deadline ? new Date(deadline).toDateString() : "TBD";
   const message = `Deadline updated for task "${task.name}". Complete it by ${deadlineStr}`;
-  const redirectTo = `/tasks/${task._id}`;
+  const redirectTo = `/projects/${task._id}`;
   await sendAlert({
     recipients: affectedUsers,
     message,
@@ -153,7 +153,7 @@ export const deadlineUpdateAlert = async (task, affectedUsers) => {
 export const slackWarningAlert = async (task, members) => {
   // members should be array of user IDs
   const message = `Your timeline for task "${task.name}" is rigid (0 slack). Please finish on time or consult your manager.`;
-  const redirectTo = `/tasks/${task._id}`;
+  const redirectTo = `/projects/${task._id}`;
   await sendAlert({
     recipients: members,
     message,
@@ -166,7 +166,7 @@ export const slackWarningAlert = async (task, members) => {
 export const taskStatusAlert = async (task, affectedUsers, status) => {
   // affectedUsers should be array of user IDs
   const message = `Task "${task.name}" status changed to "${status}"`;
-  const redirectTo = `/tasks/${task._id}`;
+  const redirectTo = `/projects/${task._id}`;
   await sendAlert({
     recipients: affectedUsers,
     message,
@@ -179,7 +179,7 @@ export const taskStatusAlert = async (task, affectedUsers, status) => {
 export const managerFeedbackAlert = async (task, comment, recipients) => {
   // recipients should be array of user IDs
   const message = `Manager feedback on "${task.name}": ${comment}`;
-  const redirectTo = `/tasks/${task._id}`;
+  const redirectTo = `/projects/${task._id}`;
   await sendAlert({ recipients, message, type: "info", redirectTo });
 };
 
@@ -321,7 +321,7 @@ export const managerEscalationAlert = async (subtask, task, assignedUser) => {
       recipients,
       message,
       type: "escalation",
-      redirectTo: `/tasks/${task._id}?focus=subtask_${subtask._id}`,
+      redirectTo: `/projects/${task._id}?focus=subtask_${subtask._id}`,
       persist: true,
     });
 
