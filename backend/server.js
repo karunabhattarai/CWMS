@@ -41,7 +41,10 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json()); // Middleware to parse JSON bodies
+
+// Increase payload limits for file uploads (base64 encoded files can be large)
+app.use(express.json({ limit: '50mb' })); // Increased from default 100kb to 50mb
+app.use(express.urlencoded({ limit: '50mb', extended: true })); // Also increase URL encoded limit
 
 // Routes
 app.use('/api/user', userRoutes);

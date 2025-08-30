@@ -156,6 +156,7 @@ export const getEmployeeSubtasks = async (req, res) => {
     })
       .populate("task", "name")
       .populate("assignedMember", "name email")
+      .populate("dependencies", "name status")
       .sort({ createdAt: -1 });
 
     res.json(subtasks);
