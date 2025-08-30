@@ -12,7 +12,7 @@ const notificationSchema = new mongoose.Schema({
 
   type: { 
     type: String, 
-    enum: ["info", "warning", "critical", "role", "deadline", "system"], 
+    enum: ["info", "warning", "critical", "role", "deadline", "system", "soft_deadline", "hard_deadline", "escalation"], 
     default: "info" 
   }, // categorize notifications
 

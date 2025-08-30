@@ -8,17 +8,19 @@ export function useAlerts() {
   }, []);
 
   const addAlert = useCallback(
-    (type, message, duration = 5000) => {
+    (type, message, duration = 5000, redirectTo = null) => {
       const alert = {
         id: Date.now() + Math.random(),
         type,
         message,
         timestamp: new Date(),
+        redirectTo
       };
 
       setAlerts((prev) => [alert, ...prev.slice(0, 4)]);
 
-      if (duration > 0) {
+      // Don't auto-remove deadline alerts, let user interact
+      if (duration > 0 && !['soft_deadline', 'hard_deadline'].includes(type)) {
         setTimeout(() => {
           removeAlert(alert.id);
         }, duration);
@@ -49,12 +51,19 @@ export function useAlerts() {
     [addAlert]
   );
 
+  const showDeadlineAlert = useCallback(
+    (type, message, redirectTo) => addAlert(type, message, 0, redirectTo),
+    [addAlert]
+  );
+
   return {
     alerts,
     removeAlert,
+    addAlert, // Export for direct use with WebSocket alerts
     showSuccess,
     showError,
     showWarning,
     showInfo,
+    showDeadlineAlert,
   };
 }

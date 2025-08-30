@@ -5,7 +5,7 @@ import { useAlerts } from "../hooks/useAlerts";
 
 export default function GlobalAlertListener() {
   const { user, loading } = useAuth();
-  const { showSuccess, showError, showWarning, showInfo } = useAlerts();
+  const { showSuccess, showError, showWarning, showInfo, addAlert } = useAlerts();
 
   useEffect(() => {
     // Don't connect socket until auth is loaded and user is available
@@ -28,26 +28,32 @@ export default function GlobalAlertListener() {
     
     socket.on("alert", (alert) => {
       console.log("[GlobalAlertListener] Received alert:", alert);
-      const truncatedMsg = alert.message.length > 50 ? alert.message.slice(0, 47) + "..." : alert.message;
       
       // Add a small delay to ensure the alert displays after any UI state changes
       setTimeout(() => {
-        // Use the appropriate alert function based on type
-        switch (alert.type) {
-          case "success":
-            showSuccess(truncatedMsg);
-            break;
-          case "error":
-            showError(truncatedMsg);
-            break;
-          case "warning":
-            showWarning(truncatedMsg);
-            break;
-          case "critical":
-            showError(truncatedMsg); // Treat critical as error
-            break;
-          default:
-            showInfo(truncatedMsg);
+        // Handle deadline alerts with redirect functionality
+        if (['soft_deadline', 'hard_deadline'].includes(alert.type)) {
+          addAlert(alert.type, alert.message, 0, alert.redirectTo);
+        } else {
+          // Handle regular alerts (truncate message for display)
+          const truncatedMsg = alert.message.length > 50 ? alert.message.slice(0, 47) + "..." : alert.message;
+          
+          switch (alert.type) {
+            case "success":
+              showSuccess(truncatedMsg);
+              break;
+            case "error":
+              showError(truncatedMsg);
+              break;
+            case "warning":
+              showWarning(truncatedMsg);
+              break;
+            case "critical":
+              showError(truncatedMsg); // Treat critical as error
+              break;
+            default:
+              showInfo(truncatedMsg);
+          }
         }
       }, 100); // Small delay to let UI settle
     });
@@ -61,7 +67,7 @@ export default function GlobalAlertListener() {
       socket.off("connect");
       socket.off("disconnect");
     };
-  }, [user, loading, showSuccess, showError, showWarning, showInfo]);
+  }, [user, loading, showSuccess, showError, showWarning, showInfo, addAlert]);
 
   return null;
 }
