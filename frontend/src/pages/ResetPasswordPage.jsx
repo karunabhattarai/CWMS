@@ -6,6 +6,9 @@ export default function ResetPasswordPage() {
   const [isWelcome, setIsWelcome] = useState(false);
 
   useEffect(() => {
+    // Clear any existing login tokens when accessing reset password page
+    localStorage.removeItem("token");
+
     // Get token from URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const tokenFromUrl = urlParams.get("token");

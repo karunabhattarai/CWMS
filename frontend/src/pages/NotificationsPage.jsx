@@ -142,6 +142,18 @@ function NotificationsPage() {
     }
   };
 
+  const handleNotificationClick = async (notification) => {
+    // Mark as read if not already read
+    if (!isRead(notification)) {
+      await markAsRead(notification._id);
+    }
+
+    // Redirect if there's a redirectTo URL
+    if (notification.redirectTo) {
+      window.location.href = notification.redirectTo;
+    }
+  };
+
   const isRead = (notification) => {
     return notification.readBy?.includes(user.id || user._id);
   };
@@ -275,10 +287,11 @@ function NotificationsPage() {
           filteredNotifications.map((notification) => (
             <div
               key={notification._id}
-              className={`p-4 rounded-lg border transition-all duration-200 hover:shadow-md ${
+              onClick={() => handleNotificationClick(notification)}
+              className={`p-4 rounded-lg border transition-all duration-200 hover:shadow-md cursor-pointer ${
                 isRead(notification)
-                  ? "bg-white border-gray-200"
-                  : "bg-blue-50 border-blue-200 shadow-sm"
+                  ? "bg-white border-gray-200 hover:bg-gray-50"
+                  : "bg-blue-50 border-blue-200 shadow-sm hover:bg-blue-100"
               }`}
             >
               <div className="flex items-start gap-3">
@@ -311,7 +324,10 @@ function NotificationsPage() {
                 <div className="flex items-center gap-1">
                   {!isRead(notification) && (
                     <button
-                      onClick={() => markAsRead(notification._id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        markAsRead(notification._id);
+                      }}
                       className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
                       title="Mark as read"
                     >
@@ -322,7 +338,10 @@ function NotificationsPage() {
                   {(user?.role === "superadmin" ||
                     user?.role === "manager") && (
                     <button
-                      onClick={() => deleteNotification(notification._id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteNotification(notification._id);
+                      }}
                       className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                       title="Delete notification"
                     >
@@ -336,6 +355,7 @@ function NotificationsPage() {
                 <div className="mt-3 pt-3 border-t border-gray-100">
                   <a
                     href={notification.redirectTo}
+                    onClick={(e) => e.stopPropagation()}
                     className="inline-flex items-center text-sm text-green-600 hover:text-green-700 font-medium"
                   >
                     View details →

@@ -409,31 +409,35 @@ export default function EditProjectDetailsForm({
 
     try {
       // Update the existing project
+      const requestData = {
+        name: projectName.trim(),
+        deadline,
+        startDate,
+        priority,
+        subtasks: (assigned || []).map((s) => ({
+          _id: s._id, // Include ID for existing subtasks
+          name: s.name,
+          role: s.role,
+          subtaskTemplate: s.subtaskTemplate || null,
+          assignedMember: s.assignedMember || null,
+          estimatedDurationDays: s.estimatedDurationDays || 1,
+          description: s.description || "",
+          dependencies: (s.dependencies || [])
+            .map((depIdx) => {
+              // Convert index back to subtask ID
+              const depSubtask = assigned[depIdx];
+              return depSubtask ? depSubtask._id : null;
+            })
+            .filter((id) => id !== null), // Remove any null dependencies
+          status: s.status || "Not Started",
+        })),
+      };
+
+      console.log("Sending update request with data:", requestData);
+
       const response = await axios.put(
         `${API_BASE}/api/task/${project._id}`,
-        {
-          name: projectName.trim(),
-          deadline,
-          startDate,
-          priority,
-          subtasks: (assigned || []).map((s) => ({
-            _id: s._id, // Include ID for existing subtasks
-            name: s.name,
-            role: s.role,
-            subtaskTemplate: s.subtaskTemplate || null,
-            assignedMember: s.assignedMember || null,
-            estimatedDurationDays: s.estimatedDurationDays || 1,
-            description: s.description || "",
-            dependencies: (s.dependencies || [])
-              .map((depIdx) => {
-                // Convert index back to subtask ID
-                const depSubtask = assigned[depIdx];
-                return depSubtask ? depSubtask._id : null;
-              })
-              .filter((id) => id !== null), // Remove any null dependencies
-            status: s.status || "Not Started",
-          })),
-        },
+        requestData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -447,7 +451,7 @@ export default function EditProjectDetailsForm({
           navigate(`/projects/${project._id}`);
         }, 2000);
       } else {
-        navigate(`/projects/${project._id}`);
+        navigate(`/projects`);
       }
     } catch (err) {
       console.error("Project update error:", err);
