@@ -42,7 +42,7 @@ const cronJobSchema = new mongoose.Schema({
   // Status tracking
   status: {
     type: String,
-    enum: ['pending', 'processed', 'cancelled'],
+    enum: ['pending', 'processed', 'skipped', 'cancelled'],
     default: 'pending'
   },
   
@@ -50,6 +50,29 @@ const cronJobSchema = new mongoose.Schema({
   processedAt: {
     type: Date,
     default: null
+  },
+  
+  // Reason for skipping (if status is 'skipped')
+  skipReason: {
+    type: String,
+    default: null
+  },
+  
+  // User response tracking (for soft deadline alerts)
+  userResponse: {
+    canComplete: {
+      type: Boolean,
+      default: null
+    },
+    respondedAt: {
+      type: Date,
+      default: null
+    },
+    respondedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
+    }
   },
   
   // Original deadline this alert is based on

@@ -4,6 +4,7 @@ import authMiddleware from "../middleware/authMiddleware.js";
 import allowRoles from "../middleware/roleMiddleware.js";
 import {
   getSubtasksByTask,
+  getSubtaskById,
   updateSubtask,
   deleteSubtask,
 } from "../controllers/subtaskController.js";
@@ -14,6 +15,13 @@ router.get(
   "/task/:taskId",
   authMiddleware,
   getSubtasksByTask
+);
+
+router.get(
+  "/:id",
+  authMiddleware,
+  allowRoles("superadmin", "manager", "employee"),
+  getSubtaskById
 );
 
 router.put(

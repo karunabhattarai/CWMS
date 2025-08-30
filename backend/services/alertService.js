@@ -59,7 +59,7 @@ export const taskAssignmentAlert = async (task, assignedUsers) => {
   console.log("assignedUsers:", assignedUsers);
 
   const message = `You have been assigned to task: "${task.name}"`;
-  const redirectTo = `/tasks/${task._id}`;
+  const redirectTo = `/projects/${task._id}`;
   await sendAlert({
     recipients: assignedUsers,
     message,
@@ -118,7 +118,7 @@ export const taskCreationAlert = async (task) => {
           ? " ⚠️ This task is CRITICAL! Any delay will delay the project."
           : "");
       const type = subtask.isCritical ? "critical" : "info";
-      const redirectTo = `/tasks/${fullTask._id}`;
+      const redirectTo = `/projects/${fullTask._id}`;
       await sendAlert({
         recipients: [recipientId],
         message,
@@ -140,7 +140,7 @@ export const deadlineUpdateAlert = async (task, affectedUsers) => {
   const deadline = task.deadline || task.dueDate; // Handle both field names
   const deadlineStr = deadline ? new Date(deadline).toDateString() : "TBD";
   const message = `Deadline updated for task "${task.name}". Complete it by ${deadlineStr}`;
-  const redirectTo = `/tasks/${task._id}`;
+  const redirectTo = `/projects/${task._id}`;
   await sendAlert({
     recipients: affectedUsers,
     message,
@@ -153,7 +153,7 @@ export const deadlineUpdateAlert = async (task, affectedUsers) => {
 export const slackWarningAlert = async (task, members) => {
   // members should be array of user IDs
   const message = `Your timeline for task "${task.name}" is rigid (0 slack). Please finish on time or consult your manager.`;
-  const redirectTo = `/tasks/${task._id}`;
+  const redirectTo = `/projects/${task._id}`;
   await sendAlert({
     recipients: members,
     message,
@@ -166,7 +166,7 @@ export const slackWarningAlert = async (task, members) => {
 export const taskStatusAlert = async (task, affectedUsers, status) => {
   // affectedUsers should be array of user IDs
   const message = `Task "${task.name}" status changed to "${status}"`;
-  const redirectTo = `/tasks/${task._id}`;
+  const redirectTo = `/projects/${task._id}`;
   await sendAlert({
     recipients: affectedUsers,
     message,
@@ -179,7 +179,7 @@ export const taskStatusAlert = async (task, affectedUsers, status) => {
 export const managerFeedbackAlert = async (task, comment, recipients) => {
   // recipients should be array of user IDs
   const message = `Manager feedback on "${task.name}": ${comment}`;
-  const redirectTo = `/tasks/${task._id}`;
+  const redirectTo = `/projects/${task._id}`;
   await sendAlert({ recipients, message, type: "info", redirectTo });
 };
 
@@ -230,8 +230,14 @@ export const softDeadlineAlert = async (subtask, task) => {
     if (!subtask.assignedMember) return;
 
     const User = (await import("../models/User.js")).default;
-    const user = await User.findOne({ member: subtask.assignedMember._id });
-    if (!user) return;
+    const user = await User.findOne({ member: subtask.assignedMember._id || subtask.assignedMember });
+    
+    if (!user) {
+      console.log(`❌ No user found for member: ${subtask.assignedMember._id || subtask.assignedMember}`);
+      return;
+    }
+    
+    console.log(`✅ Found user: ${user.name} (${user._id})`);
 
     const message = `⚠️ Soft deadline reminder: Will you be able to complete "${subtask.name}" (from project "${task.name}") by tomorrow? Please confirm your status.`;
 
@@ -239,9 +245,11 @@ export const softDeadlineAlert = async (subtask, task) => {
       recipients: [user._id],
       message,
       type: "soft_deadline",
-      redirectTo: `/subtasks/${subtask._id}?action=confirm_completion`,
-      persist: true,
+      redirectTo: `/subtasks/${subtask._id}/deadline-confirmation?action=confirm_completion`,
+      persist: true
     });
+    
+    console.log(`✅ Soft deadline alert sent successfully for "${subtask.name}"`);
   } catch (error) {
     console.error("Error in softDeadlineAlert:", error);
   }
@@ -271,27 +279,54 @@ export const hardDeadlineAlert = async (subtask, task) => {
 
 export const managerEscalationAlert = async (subtask, task, assignedUser) => {
   try {
-    // Find managers in the same company
     const User = (await import("../models/User.js")).default;
+    const userName = assignedUser.name || 'Unknown User';
+    
+    // First, try to find managers in the same company
     const managers = await User.find({
       company: task.company,
       role: "manager",
     });
 
-    if (managers.length === 0) return;
+    let recipients = [];
+    let escalationLevel = '';
 
-    const managerIds = managers.map((m) => m._id);
-    const userName = assignedUser.name || "Unknown User";
+    if (managers.length > 0) {
+      // Escalate to managers
+      recipients = managers.map(m => m._id);
+      escalationLevel = 'manager';
+      console.log(`📤 Escalating to ${managers.length} manager(s) in company`);
+    } else {
+      // No managers found, escalate to superadmins
+      const superadmins = await User.find({ 
+        company: task.company, 
+        role: 'superadmin' 
+      });
 
-    const message = `⚠️ ESCALATION: User "${userName}" indicated they cannot complete "${subtask.name}" (from project "${task.name}") on time. Please consult with them immediately.`;
+      if (superadmins.length > 0) {
+        recipients = superadmins.map(s => s._id);
+        escalationLevel = 'superadmin';
+        console.log(`📤 No managers found, escalating to ${superadmins.length} superadmin(s)`);
+      } else {
+        console.log(`❌ No managers or superadmins found in company for escalation`);
+        return;
+      }
+    }
 
+    const message = escalationLevel === 'manager' 
+      ? `⚠️ ESCALATION: User "${userName}" indicated they cannot complete "${subtask.name}" (from project "${task.name}") on time. Please consult with them immediately.`
+      : `🚨 SUPERADMIN ESCALATION: User "${userName}" cannot complete "${subtask.name}" (from project "${task.name}") on time. No managers available - please assign a manager or handle this escalation directly.`;
+    
     await sendAlert({
-      recipients: managerIds,
+      recipients,
       message,
       type: "escalation",
-      redirectTo: `/tasks/${task._id}?focus=subtask_${subtask._id}`,
+      redirectTo: `/projects/${task._id}?focus=subtask_${subtask._id}`,
       persist: true,
     });
+
+    console.log(`✅ Escalation sent to ${escalationLevel}(s) for user "${userName}" - subtask "${subtask.name}"`);
+    
   } catch (error) {
     console.error("Error in managerEscalationAlert:", error);
   }

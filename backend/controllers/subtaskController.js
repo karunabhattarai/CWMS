@@ -6,6 +6,53 @@ import { taskStatusAlert, sendAlert } from '../services/alertService.js';
 import User from '../models/User.js';
 import dynamicCronService from '../services/cronService.js';
 
+export const getSubtaskById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log(`🔍 Fetching subtask by ID: ${id}`);
+
+    const subtask = await Subtask.findById(id)
+      .populate('subtaskTemplate', 'name estimatedDurationDays')
+      .populate('assignedMember', 'name email')
+      .populate('task', 'name deadline company')
+      .populate({
+        path: 'dependencies',
+        select: 'subtaskTemplate name status'
+      });
+
+    if (!subtask) {
+      console.log(`❌ Subtask not found: ${id}`);
+      return res.status(404).json({ message: 'Subtask not found' });
+    }
+
+    console.log(`✅ Found subtask: ${subtask.name} (assigned to: ${subtask.assignedMember?.name || 'none'})`);
+
+    // Check if user has access to this subtask
+    if (req.user.role === 'employee') {
+      // Employees can only access subtasks assigned to them or in their company
+      const isAssigned = subtask.assignedMember && subtask.assignedMember._id.toString() === req.user.member.toString();
+      const sameCompany = subtask.task.company.toString() === req.user.company.toString();
+      
+      if (!isAssigned && !sameCompany) {
+        console.log(`❌ Access denied for employee: not assigned and different company`);
+        return res.status(403).json({ message: 'Access denied' });
+      }
+    } else {
+      // Managers and superadmins need to be in the same company
+      if (subtask.task.company.toString() !== req.user.company.toString()) {
+        console.log(`❌ Access denied: different company`);
+        return res.status(403).json({ message: 'Access denied' });
+      }
+    }
+
+    console.log(`✅ Access granted for user: ${req.user.email} (${req.user.role})`);
+    res.status(200).json(subtask);
+  } catch (error) {
+    console.error('Error fetching subtask:', error);
+    res.status(500).json({ message: 'Failed to fetch subtask', error: error.message });
+  }
+};
+
 
 export const getSubtasksByTask = async (req, res) => {
   try {
@@ -174,7 +221,7 @@ export const updateSubtask = async (req, res) => {
           recipients: managerIds,
           message: `Task "${task.name}" is now completed. All subtasks are finished!`,
           type: "info",
-          redirectTo: `/tasks/${task._id}`,
+          redirectTo: `/projects/${task._id}`,
           persist: true,
         });
         task.status = "Completed";

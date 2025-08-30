@@ -33,9 +33,11 @@ export function useAlerts() {
     // Return empty alerts array for backward compatibility
     alerts: [],
     removeAlert,
+    addAlert, // Export for direct use with WebSocket alerts
     showSuccess,
     showError,
     showWarning,
     showInfo,
+    showDeadlineAlert,
   };
 }

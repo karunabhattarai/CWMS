@@ -22,6 +22,7 @@ import RoleProtectedRoute from "../components/RoleProtectedRoute";
 import CompanyGuardedRoute from "../components/CompanyGuardedRoute";
 import AuthRedirectRoute from "../components/AuthRedirectRoute";
 import TaskDetailsPage from "../pages/TaskDetailsPage";
+import DeadlineConfirmation from "../components/deadlines/DeadlineConfirmation";
 
 export const routes = [
   {
@@ -186,6 +187,16 @@ export const routes = [
       <ProtectedRoute>
         <DashboardLayout>
           <TaskDetailsPage />
+        </DashboardLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/subtasks/:subtaskId/deadline-confirmation",
+    element: (
+      <ProtectedRoute>
+        <DashboardLayout>
+          <DeadlineConfirmation />
         </DashboardLayout>
       </ProtectedRoute>
     ),
