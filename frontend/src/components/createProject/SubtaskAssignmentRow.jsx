@@ -6,6 +6,7 @@ export default function SubtaskAssignmentRow({
   getMembersByRole,
   onMemberChange,
   onDurationChange,
+  onStatusChange,
   onNameChange,
   onRoleChange,
   onDependencyChange,
@@ -115,6 +116,22 @@ export default function SubtaskAssignmentRow({
                     </option>
                   );
                 })}
+              </select>
+            </div>
+
+            {/* Status Selector */}
+            <div className="w-full md:w-44">
+              <label className="block text-green-700 text-xs font-medium mb-1">
+                Status
+              </label>
+              <select
+                className="w-full px-3 py-2 border border-green-200 rounded-md bg-white text-sm text-green-900"
+                value={sub.status || "Not Started"}
+                onChange={(e) => onStatusChange(idx, e.target.value)}
+              >
+                <option value="Not Started">Not Started</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
               </select>
             </div>
 
