@@ -205,6 +205,7 @@ export const loginUser = async (req, res) => {
         company: user.company?._id,
         companyName: user.company?.name || null,
         role: user.role,
+        name: user.name
       },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }

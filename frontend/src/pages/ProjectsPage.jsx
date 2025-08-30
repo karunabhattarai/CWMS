@@ -3,6 +3,7 @@ import axios from "axios";
 import ProjectList from "../components/projects/ProjectList";
 import ProjectSearchFilter from "../components/projects/ProjectSearchFilter";
 import { useToast } from "../context/ToastContext";
+import ConfirmationModal from "../components/common/ConfirmationModal";
 
 const statusStyles = {
   completed: "bg-green-100 text-green-700 border border-green-200",
@@ -43,6 +44,9 @@ export default function ProjectsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateSort, setDateSort] = useState("newest");
   const [error, setError] = useState("");
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteProjectId, setDeleteProjectId] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const { showToast } = useToast();
 
   const token = localStorage.getItem("token");
@@ -67,23 +71,35 @@ export default function ProjectsPage() {
       }
     }
     fetchTasks();
-  }, []);
+  }, [API_BASE, token]);
 
-  async function handleDeleteProject(taskId) {
-    if (!window.confirm("Are you sure you want to delete this project?"))
-      return;
+  function handleDeleteProject(taskId) {
+    setDeleteProjectId(taskId);
+    setIsDeleteModalOpen(true);
+  }
+
+  async function confirmDeleteProject() {
+    if (!deleteProjectId) return;
+
+    setDeleteLoading(true);
     try {
-      await axios.delete(`${API_BASE}/api/task/${taskId}`, {
+      await axios.delete(`${API_BASE}/api/task/${deleteProjectId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      setTasks((prev) => prev.filter((t) => t._id !== taskId));
+      setTasks((prev) => prev.filter((t) => t._id !== deleteProjectId));
+      showToast("Project deleted successfully", "success");
     } catch (e) {
       console.log(e);
       showToast(
-        e.response?.data?.message || e.message || "Failed to delete project"
+        e.response?.data?.message || e.message || "Failed to delete project",
+        "error"
       );
+    } finally {
+      setDeleteLoading(false);
+      setIsDeleteModalOpen(false);
+      setDeleteProjectId(null);
     }
   }
 
@@ -153,6 +169,19 @@ export default function ProjectsPage() {
             getProjectStatusAndProgress={getProjectStatusAndProgress}
           />
         )}
+
+        <ConfirmationModal
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          onConfirm={confirmDeleteProject}
+          title="Delete Project"
+          message="Are you sure you want to delete this project? This action cannot be undone."
+          confirmText="Delete"
+          cancelText="Cancel"
+          confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+          isDestructive={true}
+          loading={deleteLoading}
+        />
       </div>
     </div>
   );

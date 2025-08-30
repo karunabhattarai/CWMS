@@ -4,7 +4,6 @@ import { useAuth } from "../hooks/useAuth";
 import { useNotifications } from "../hooks/useNotifications";
 import {
   HomeIcon,
-  ChartBarIcon,
   UsersIcon,
   BriefcaseIcon,
   FolderIcon,
@@ -35,12 +34,6 @@ const getNavItems = (userRole) => {
   ];
 
   const managerAndSuperAdminItems = [
-    {
-      label: "Reports",
-      to: "/reports",
-      icon: ChartBarIcon,
-      roles: ["superadmin", "manager"],
-    },
     {
       label: "Members",
       to: "/members",
@@ -160,7 +153,7 @@ export default function Sidebar() {
             <UserCircleIcon className="w-8 h-8 text-green-700" />
             <div className="flex-1">
               <div className="font-semibold text-green-900 text-sm truncate">
-                {user?.username || "User"}
+                {user?.name || "User"}
               </div>
               <div className="text-xs text-green-600 capitalize">
                 {user?.role || "Member"}

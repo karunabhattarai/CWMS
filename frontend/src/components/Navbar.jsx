@@ -60,16 +60,14 @@ export default function Navbar() {
     </>
   );
 
-  // Menu items for logged-in users (only logout)
-  const loggedInMenuItems = (
-    <li>
-      <button
-        onClick={handleLogoutClick}
-        className="px-4 py-2 rounded bg-rose-700 text-white font-medium transition-colors hover:bg-rose-800"
-      >
-        Logout
-      </button>
-    </li>
+  // Logout button (no li wrapper)
+  const loggedInMenuItem = (
+    <button
+      onClick={handleLogoutClick}
+      className="px-4 py-2 rounded bg-rose-700 text-white font-medium transition-colors hover:bg-rose-800"
+    >
+      Logout
+    </button>
   );
 
   return (
@@ -91,25 +89,24 @@ export default function Navbar() {
 
         {/* Right side - Menu items */}
         <div className="flex items-center">
-          {/* Desktop Menu */}
-          <ul className="hidden md:flex items-center space-x-8 font-sans text-green-900">
-            {!isLoggedIn ? publicMenuItems : loggedInMenuItems}
-          </ul>
-
-          {/* Mobile menu button */}
-          <button
-            className="md:hidden text-3xl text-green-900 ml-4"
-            onClick={() => setShowMobileMenu((prev) => !prev)}
-            aria-label="Toggle menu"
-          >
-            ☰
-          </button>
+          {/* Mobile menu button or Logout */}
+          {isLoggedIn ? (
+            loggedInMenuItem
+          ) : (
+            <button
+              className="md:hidden text-3xl text-green-900 ml-4"
+              onClick={() => setShowMobileMenu((prev) => !prev)}
+              aria-label="Toggle menu"
+            >
+              ☰
+            </button>
+          )}
         </div>
 
         {/* Mobile Menu Dropdown */}
         {showMobileMenu && (
-          <ul className="absolute top-full left-0 w-full bg-white shadow-md flex flex-col items-start space-y-4 px-6 py-4 font-sans text-green-900 md:hidden z-50">
-            {!isLoggedIn ? publicMenuItems : loggedInMenuItems}
+          <ul className="absolute top-full left-0 w-full bg-white shadow-md flex flex-col items-start space-y-4 px-6 py-4 font-sans text-green-900 md:hidden z-50 list-none">
+            {publicMenuItems}
           </ul>
         )}
       </nav>
