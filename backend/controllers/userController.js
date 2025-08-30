@@ -1,5 +1,5 @@
 import User from "../models/User.js";
-import { createMemberInternal } from './memberController.js';
+import { createMemberInternal } from "./memberController.js";
 import Member from "../models/Member.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -25,20 +25,20 @@ export const registerUser = async (req, res) => {
 
     // Validate required fields
     if (!name || !email || !role) {
-      return res.status(400).json({ message: 'Missing required fields' });
+      return res.status(400).json({ message: "Missing required fields" });
     }
 
     // Check if user already exists
     const existing = await User.findOne({ email });
     if (existing) {
-      return res.status(400).json({ message: 'User already exists' });
+      return res.status(400).json({ message: "User already exists" });
     }
 
     // Set default password if not provided (for manager and employee)
-    const userPassword = password || '123456';
+    const userPassword = password || "123456";
 
     // Create verification token
-    const token = crypto.randomBytes(32).toString('hex');
+    const token = crypto.randomBytes(32).toString("hex");
 
     // Prepare new user data
     const newUserData = {
@@ -140,7 +140,6 @@ export const registerUser = async (req, res) => {
 
 //verify above users with email
 export const verifyUserEmail = async (req, res) => {
-  //issue is?
   // is called when user clicks on the verification link in the email
   // the link should contain the token as a query parameter
   try {
@@ -159,7 +158,12 @@ export const verifyUserEmail = async (req, res) => {
     user.isVerified = true;
     user.verificationToken = null; // Clear the token after verification
     await user.save();
-    res.status(200).json({ message: "Email verified successfully" });
+
+    // Redirect to frontend login page after successful verification
+    const frontendLoginUrl = `${
+      process.env.FRONTEND_URL || "http://localhost:5173"
+    }/login?verified=true`;
+    return res.redirect(frontendLoginUrl);
   } catch (error) {
     res
       .status(500)
@@ -205,7 +209,7 @@ export const loginUser = async (req, res) => {
         company: user.company?._id,
         companyName: user.company?.name || null,
         role: user.role,
-        name: user.name
+        name: user.name,
       },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }

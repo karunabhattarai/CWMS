@@ -31,16 +31,28 @@ export default function AuthForm({
   const navigate = useNavigate();
   const { showToast } = useToast();
 
-  // Get token from URL for reset password
+  // Get token from URL for reset password and check for verification status
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+
     if (type === "reset-password") {
-      const urlParams = new URLSearchParams(window.location.search);
       const tokenFromUrl = urlParams.get("token");
       if (tokenFromUrl) {
         setFormData((prev) => ({ ...prev, token: tokenFromUrl }));
       }
     }
-  }, [type]);
+
+    // Check if user was redirected after email verification
+    if (type === "login") {
+      const verified = urlParams.get("verified");
+      if (verified === "true") {
+        setMessage(
+          "Email verified successfully! You can now login with your credentials."
+        );
+        showToast("Email verified successfully!", "success");
+      }
+    }
+  }, [type, showToast]);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
