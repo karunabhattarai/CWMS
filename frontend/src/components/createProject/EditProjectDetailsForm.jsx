@@ -159,7 +159,6 @@ export default function EditProjectDetailsForm({
 
   // Constants
   const token = localStorage.getItem("token");
-  const today = new Date().toISOString().slice(0, 10);
   const twoYearsFromNow = new Date();
   twoYearsFromNow.setFullYear(twoYearsFromNow.getFullYear() + 2);
   const maxDate = twoYearsFromNow.toISOString().slice(0, 10);
@@ -603,7 +602,6 @@ export default function EditProjectDetailsForm({
               type="date"
               className="w-full px-3 py-2 rounded border border-green-200"
               value={startDate}
-              min={today}
               max={deadline}
               onChange={(e) => setStartDate(e.target.value)}
               required
