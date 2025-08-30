@@ -116,7 +116,7 @@ export default function AuthForm({
 
       switch (type) {
         case "login": {
-          response = await axios.post("http://localhost:5000/api/user/login", {
+          response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/user/login`, {
             email,
             password,
           });
@@ -135,7 +135,7 @@ export default function AuthForm({
 
         case "register": {
           response = await axios.post(
-            "http://localhost:5000/api/user/register",
+            `${import.meta.env.VITE_API_BASE_URL}/api/user/register`,
             {
               name,
               email,
@@ -157,7 +157,7 @@ export default function AuthForm({
 
         case "forgot-password": {
           await axios.post(
-            "http://localhost:5000/api/user/request-password-reset",
+            `${import.meta.env.VITE_API_BASE_URL}/api/user/request-password-reset`,
             {
               email,
             }
@@ -169,7 +169,7 @@ export default function AuthForm({
         }
 
         case "reset-password": {
-          await axios.post("http://localhost:5000/api/user/reset-password", {
+          await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/user/reset-password`, {
             token,
             newPassword,
           });

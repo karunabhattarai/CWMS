@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import SubtaskModal from "./SubtaskModal";
+import axios from "axios";
+import { useToast } from "../../context/ToastContext";
 
 const STATUS = ["Not Started", "In Progress", "Completed", "Backlog"];
 
@@ -22,8 +24,45 @@ function getStatus(subtask) {
   return "Not Started";
 }
 
-export default function KanbanTab({ subtasks }) {
+export default function KanbanTab({ subtasks: initialSubtasks }) {
+  const [subtasks, setSubtasks] = useState(initialSubtasks);
   const [selectedSubtask, setSelectedSubtask] = useState(null);
+  const { showToast } = useToast();
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
+  useEffect(() => {
+    setSubtasks(initialSubtasks);
+  }, [initialSubtasks]);
+
+  // We handle subtask updates through refreshSubtasks when modal closes
+
+  // Refresh subtasks data from server
+  const refreshSubtasks = async () => {
+    try {
+      if (!subtasks.length) return;
+
+      const taskId = subtasks[0].task;
+      const token = localStorage.getItem("token");
+
+      const response = await axios.get(
+        `${API_BASE}/api/subtask/task/${taskId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      setSubtasks(response.data);
+    } catch (error) {
+      console.error("Error refreshing subtasks:", error);
+      showToast("Failed to refresh subtasks data. Please try again.", "error");
+    }
+  };
+
+  const handleModalClose = () => {
+    // Refresh subtasks when modal is closed to get latest data
+    refreshSubtasks();
+    setSelectedSubtask(null);
+  };
 
   // Prepare columns
   const columns = STATUS.reduce((acc, stat) => ({ ...acc, [stat]: [] }), {});
@@ -31,6 +70,34 @@ export default function KanbanTab({ subtasks }) {
 
   // Drag and drop handler (optional for full drag logic)
   const onDragEnd = () => {};
+
+  // Display attachment indicators
+  const renderAttachmentIndicator = (subtask) => {
+    if (!subtask.attachments || subtask.attachments.length === 0) return null;
+
+    return (
+      <div className="flex items-center mt-1">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4 text-gray-500"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+          />
+        </svg>
+        <span className="text-xs text-gray-500 ml-1">
+          {subtask.attachments.length} attachment
+          {subtask.attachments.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+    );
+  };
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
@@ -81,6 +148,7 @@ export default function KanbanTab({ subtasks }) {
                             Assigned:{" "}
                             {subtask.assignedMember?.name || "Unassigned"}
                           </div>
+                          {renderAttachmentIndicator(subtask)}
                         </div>
                       )}
                     </Draggable>
@@ -92,10 +160,7 @@ export default function KanbanTab({ subtasks }) {
           </div>
         ))}
         {selectedSubtask && (
-          <SubtaskModal
-            subtask={selectedSubtask}
-            onClose={() => setSelectedSubtask(null)}
-          />
+          <SubtaskModal subtask={selectedSubtask} onClose={handleModalClose} />
         )}
       </div>
     </DragDropContext>

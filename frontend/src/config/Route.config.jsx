@@ -5,6 +5,7 @@ import OnboardingPage from "../pages/OnboardingPage";
 import ReportsPage from "../pages/ReportsPage";
 import SettingsPage from "../pages/SettingsPage";
 import NotificationsPage from "../pages/NotificationsPage";
+import SubtaskDetailPage from "../pages/SubtaskDetailPage";
 
 import DashboardLayout from "../layouts/DashboardLayout";
 import PublicLayout from "../layouts/PublicLayout";
@@ -197,6 +198,16 @@ export const routes = [
       <ProtectedRoute>
         <DashboardLayout>
           <DeadlineConfirmation />
+        </DashboardLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/subtasks/:subtaskId",
+    element: (
+      <ProtectedRoute>
+        <DashboardLayout>
+          <SubtaskDetailPage />
         </DashboardLayout>
       </ProtectedRoute>
     ),

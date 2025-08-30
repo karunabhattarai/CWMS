@@ -34,6 +34,14 @@ function mapSubtasksToGantt(subtasks) {
 export default function GanttTab({ subtasks }) {
   const tasks = useMemo(() => mapSubtasksToGantt(subtasks), [subtasks]);
   const [viewMode, setViewMode] = useState(ViewMode.Day);
+  const [selectedTask, setSelectedTask] = useState(null);
+
+  const handleTaskClick = (task) => {
+    const originalSubtask = subtasks.find((s) => s._id === task.id);
+    if (originalSubtask) {
+      setSelectedTask(originalSubtask);
+    }
+  };
 
   return (
     <div className="bg-white rounded-lg p-4 shadow">
@@ -52,7 +60,38 @@ export default function GanttTab({ subtasks }) {
           </button>
         ))}
       </div>
-      <FrappeGantt tasks={tasks} viewMode={viewMode} onClick={(task) => {}} />
+      <FrappeGantt
+        tasks={tasks}
+        viewMode={viewMode}
+        onClick={handleTaskClick}
+      />
+
+      {selectedTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg p-4 max-w-md w-full">
+            <h2 className="text-lg font-bold mb-2">{selectedTask.name}</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Click the button below to open this subtask's details
+            </p>
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={() => setSelectedTask(null)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded mr-2"
+              >
+                Close
+              </button>
+              <button
+                onClick={() =>
+                  (window.location.href = `/subtasks/${selectedTask._id}`)
+                }
+                className="px-4 py-2 bg-green-600 text-white rounded"
+              >
+                View Details
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

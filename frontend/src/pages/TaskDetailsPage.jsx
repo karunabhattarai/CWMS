@@ -13,6 +13,7 @@ export default function TaskDetailsPage() {
   const [subtasks, setSubtasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0); // Used to trigger refresh
 
   // Check if user can access Kanban tab (only managers and superadmins)
   const canAccessKanban =
@@ -37,6 +38,8 @@ export default function TaskDetailsPage() {
 
   const [activeTab, setActiveTab] = useState(getInitialTab);
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
+  // Refresh function is used directly in the button onClick
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -74,7 +77,7 @@ export default function TaskDetailsPage() {
     };
 
     fetchData();
-  }, [taskId, API_BASE]);
+  }, [taskId, API_BASE, refreshKey]);
 
   if (loading) {
     return (
@@ -128,6 +131,12 @@ export default function TaskDetailsPage() {
             onClick={() => setActiveTab("gantt")}
           >
             Gantt Chart
+          </button>
+          <button
+            className="ml-auto py-1 px-3 bg-green-100 text-green-700 rounded-lg text-sm hover:bg-green-200"
+            onClick={() => setRefreshKey((prev) => prev + 1)}
+          >
+            Refresh
           </button>
         </div>
         {activeTab === "kanban" && canAccessKanban ? (

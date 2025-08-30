@@ -63,8 +63,8 @@ const DeadlineConfirmation = () => {
       // Use token from useAuth or fallback to localStorage
       const authToken = token || localStorage.getItem('token');
       console.log('Using auth token:', authToken ? 'Token exists' : 'No token');
-      
-      const response = await axios.get(`http://localhost:5000/api/subtask/${subtaskId}`, {
+
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/subtask/${subtaskId}`, {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
@@ -104,7 +104,7 @@ const DeadlineConfirmation = () => {
       console.log('Checking for existing response...');
       
       const response = await axios.get(
-        `http://localhost:5000/api/deadline/response-status/${subtaskId}`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/deadline/response-status/${subtaskId}`,
         {
           headers: {
             'Authorization': `Bearer ${authToken}`,
@@ -148,7 +148,7 @@ const DeadlineConfirmation = () => {
       const authToken = token || localStorage.getItem('token');
       
       const response = await axios.post(
-        `http://localhost:5000/api/deadline/soft-deadline-response/${subtaskId}`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/deadline/soft-deadline-response/${subtaskId}`,
         { canComplete },
         {
           headers: {

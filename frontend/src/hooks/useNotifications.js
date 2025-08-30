@@ -14,7 +14,7 @@ export function useNotifications() {
       try {
         const token = localStorage.getItem("token");
         const response = await fetch(
-          `http://localhost:5000/api/notifications/user/${user._id}`,
+          `${import.meta.env.VITE_API_BASE_URL}/api/notifications/user/${user._id}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -38,7 +38,7 @@ export function useNotifications() {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:5000/api/notifications/${notificationId}/read`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/notifications/${notificationId}/read`,
         {
           method: "PATCH",
           headers: { Authorization: `Bearer ${token}` },
