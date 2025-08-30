@@ -475,9 +475,9 @@ export const getTaskById = async (req, res) => {
 };
 // this will delete those subtasks which are nto sent hai, so just id bhayeni pathaunu parxa
 export const updateTask = async (req, res) => {
+  const { id } = req.params;
+  const { name, deadline, priority, subtasks } = req.body;
   try {
-    const { id } = req.params;
-    const { name, deadline, priority, subtasks } = req.body;
 
     const task = await Task.findOne({ _id: id, company: req.user.company }).populate('subtasks');
     if (!task) return res.status(404).json({ message: "Task not found" });
@@ -528,10 +528,14 @@ export const updateTask = async (req, res) => {
         wasDeadline = task.deadline;
 
         if (s.name) subtaskDoc.name = s.name;
-        if (s.role) subtaskDoc.role = s.role;
         if (s.description !== undefined) subtaskDoc.description = s.description;
-        if (s.estimatedDurationDays) subtaskDoc.estimatedDurationDays = s.estimatedDurationDays;
-        if (s.assignedMember) subtaskDoc.assignedMember = mongoose.Types.ObjectId(s.assignedMember);
+        if (s.estimatedDurationDays)
+          subtaskDoc.estimatedDurationDays = s.estimatedDurationDays;
+        if (s.assignedMember)
+          subtaskDoc.assignedMember = new mongoose.Types.ObjectId(
+            s.assignedMember
+          );
+        if (s.status !== undefined) subtaskDoc.status = s.status;
 
         await subtaskDoc.save();
         updatedSubtaskIds.push(subtaskDoc._id);
@@ -551,10 +555,12 @@ export const updateTask = async (req, res) => {
         subtaskDoc = new Subtask({
           task: task._id,
           name: s.name,
-          role: s.role,
           description: s.description || "",
           estimatedDurationDays: s.estimatedDurationDays || 1,
-          assignedMember: s.assignedMember ? mongoose.Types.ObjectId(s.assignedMember) : null,
+          assignedMember: s.assignedMember
+            ? new mongoose.Types.ObjectId(s.assignedMember)
+            : null,
+          status: s.status || "Not Started",
         });
         await subtaskDoc.save();
         updatedSubtaskIds.push(subtaskDoc._id);
@@ -580,7 +586,11 @@ export const updateTask = async (req, res) => {
     await task.save();
 
     // Assign dependencies after all subtasks are saved
-    await assignSubtaskDependencies(subtaskIndexToId, subtasks);
+    try {
+      await assignSubtaskDependencies(subtaskIndexToId, subtasks);
+    } catch (depError) {
+      console.error("Error assigning dependencies:", depError);
+    }
 
     // Run CPM scheduling
     try {
