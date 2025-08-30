@@ -30,23 +30,26 @@ export default function GlobalAlertListener() {
       console.log("[GlobalAlertListener] Received alert:", alert);
       const truncatedMsg = alert.message.length > 50 ? alert.message.slice(0, 47) + "..." : alert.message;
       
-      // Use the appropriate alert function based on type
-      switch (alert.type) {
-        case "success":
-          showSuccess(truncatedMsg);
-          break;
-        case "error":
-          showError(truncatedMsg);
-          break;
-        case "warning":
-          showWarning(truncatedMsg);
-          break;
-        case "critical":
-          showError(truncatedMsg); // Treat critical as error
-          break;
-        default:
-          showInfo(truncatedMsg);
-      }
+      // Add a small delay to ensure the alert displays after any UI state changes
+      setTimeout(() => {
+        // Use the appropriate alert function based on type
+        switch (alert.type) {
+          case "success":
+            showSuccess(truncatedMsg);
+            break;
+          case "error":
+            showError(truncatedMsg);
+            break;
+          case "warning":
+            showWarning(truncatedMsg);
+            break;
+          case "critical":
+            showError(truncatedMsg); // Treat critical as error
+            break;
+          default:
+            showInfo(truncatedMsg);
+        }
+      }, 100); // Small delay to let UI settle
     });
     
     socket.on("disconnect", () => {
