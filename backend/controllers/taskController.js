@@ -151,13 +151,14 @@ export const createTask = async (req, res) => {
   session.startTransaction();
 
   try {
-    const { taskTemplate, name, deadline, subtasks = [], startDate } = req.body;
+    const { taskTemplate, name, deadline, priority, subtasks = [], startDate } = req.body;
     const company = req.user.company;
 
     // Debug logging
     console.log("Creating task with data:", {
       name,
       deadline,
+      priority,
       startDate,
       subtasksCount: subtasks.length,
       subtasks: subtasks.map((sub, i) => ({
@@ -187,6 +188,11 @@ export const createTask = async (req, res) => {
 
     if (!subtasks || subtasks.length === 0) {
       validationErrors.push("Task must have at least one subtask.");
+    }
+
+    // Validate priority
+    if (priority && !['urgent', 'high', 'moderate', 'low'].includes(priority)) {
+      validationErrors.push("Priority must be one of: urgent, high, moderate, low");
     }
 
     // Validate deadline
@@ -282,6 +288,7 @@ export const createTask = async (req, res) => {
       company,
       taskTemplate: taskTemplate || null,
       name: name.trim(),
+      priority: priority || 'moderate',
       deadline,
       startDate: startDate || new Date(),
     });
@@ -400,6 +407,7 @@ export const createTask = async (req, res) => {
       task: {
         _id: task._id,
         name: task.name,
+        priority: task.priority,
         deadline: task.deadline,
         startDate: task.startDate,
       },
@@ -469,10 +477,15 @@ export const getTaskById = async (req, res) => {
 export const updateTask = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, deadline, subtasks } = req.body;
+    const { name, deadline, priority, subtasks } = req.body;
 
     const task = await Task.findOne({ _id: id, company: req.user.company }).populate('subtasks');
     if (!task) return res.status(404).json({ message: "Task not found" });
+
+    // Validate priority if provided
+    if (priority && !['urgent', 'high', 'moderate', 'low'].includes(priority)) {
+      return res.status(400).json({ message: "Priority must be one of: urgent, high, moderate, low" });
+    }
 
     let subtasksPresent = Array.isArray(subtasks) && subtasks.length > 0;
 
@@ -480,6 +493,7 @@ export const updateTask = async (req, res) => {
     if (!subtasksPresent) {
       if (name) task.name = name;
       if (deadline) task.deadline = deadline;
+      if (priority) task.priority = priority;
       await task.save();
       return res.status(200).json(task);
     }
@@ -561,6 +575,7 @@ export const updateTask = async (req, res) => {
     // Update task fields
     if (name) task.name = name;
     if (deadline) task.deadline = deadline;
+    if (priority) task.priority = priority;
     task.subtasks = updatedSubtaskIds;
     await task.save();
 

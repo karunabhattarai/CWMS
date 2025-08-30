@@ -19,7 +19,7 @@ export default function TaskDetailsPage() {
       try {
         const token = localStorage.getItem("token");
         if (!token) {
-          setError("User not authenticated");
+          setError("User not authenticated"); 
           setLoading(false);
           return;
         }
