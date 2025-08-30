@@ -2,7 +2,7 @@ import { detectCircularDependency, levelizedTopologicalSort } from '../utils/gra
 import { computeCPM } from '../algorithms/cpm.js';
 import Task from '../models/Task.js';
 import Subtask from '../models/Subtask.js';
-import { getSchedulingSuggestion } from '../services/SchedulingSuggestionService.js';
+import { getSchedulingSuggestion } from '../services/schedulingSuggestionService.js';
 
 import { computePERT } from "../algorithms/pert.js";
 import { buildPERTExplanation } from "../utils/pertHelpers.js";

@@ -3,7 +3,6 @@ import { useAuth } from "../hooks/useAuth";
 import { ConfirmationModal } from "./common";
 
 export default function Navbar() {
-  // Check login state from localStorage
   const [isLoggedIn, setIsLoggedIn] = useState(
     () => !!localStorage.getItem("token")
   );
@@ -12,7 +11,6 @@ export default function Navbar() {
   const { user } = useAuth();
 
   useEffect(() => {
-    // Listen for login/logout events across tabs
     const syncLogin = () => setIsLoggedIn(!!localStorage.getItem("token"));
     window.addEventListener("storage", syncLogin);
     return () => window.removeEventListener("storage", syncLogin);
@@ -23,15 +21,14 @@ export default function Navbar() {
     setIsLoggedIn(false);
     setShowMobileMenu(false);
     setShowLogoutModal(false);
-    window.location.href = "/"; // Redirect to home after logout
+    window.location.href = "/";
   };
 
   const handleLogoutClick = () => {
     setShowLogoutModal(true);
-    setShowMobileMenu(false); // Close mobile menu if open
+    setShowMobileMenu(false);
   };
 
-  // Menu items for public (non-logged in) users
   const publicMenuItems = (
     <>
       <li>
@@ -60,7 +57,6 @@ export default function Navbar() {
     </>
   );
 
-  // Logout button (no li wrapper)
   const loggedInMenuItem = (
     <button
       onClick={handleLogoutClick}
@@ -87,12 +83,15 @@ export default function Navbar() {
           </div>
         )}
 
-        {/* Right side - Menu items */}
+        {/* Right side */}
         <div className="flex items-center">
-          {/* Mobile menu button or Logout */}
-          {isLoggedIn ? (
-            loggedInMenuItem
-          ) : (
+          {/* Desktop Menu */}
+          <ul className="hidden md:flex items-center space-x-6 font-sans text-green-900">
+            {!isLoggedIn ? publicMenuItems : <li>{loggedInMenuItem}</li>}
+          </ul>
+
+          {/* Mobile Menu Button */}
+          {!isLoggedIn && (
             <button
               className="md:hidden text-3xl text-green-900 ml-4"
               onClick={() => setShowMobileMenu((prev) => !prev)}
@@ -101,11 +100,16 @@ export default function Navbar() {
               ☰
             </button>
           )}
+
+          {/* Mobile Logout Button */}
+          {isLoggedIn && (
+            <div className="md:hidden ml-2">{loggedInMenuItem}</div>
+          )}
         </div>
 
         {/* Mobile Menu Dropdown */}
         {showMobileMenu && (
-          <ul className="absolute top-full left-0 w-full bg-white shadow-md flex flex-col items-start space-y-4 px-6 py-4 font-sans text-green-900 md:hidden z-50 list-none">
+          <ul className="absolute top-full left-0 w-full bg-white shadow-md flex flex-col items-start space-y-4 px-6 py-4 font-sans text-green-900 md:hidden list-none">
             {publicMenuItems}
           </ul>
         )}
