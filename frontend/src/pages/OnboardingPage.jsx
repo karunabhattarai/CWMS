@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import OnboardingStepper from "../components/onboarding/OnboardingStepper";
-import OnboardingRolesStep from "../components/onboarding/OnboardingRolesStep";
-import OnboardingMembersStep from "../components/onboarding/OnboardingMembersStep";
-import OnboardingProjectStep from "../components/onboarding/OnboardingProjectStep";
-import OnboardingSummaryStep from "../components/onboarding/OnboardingSummaryStep";
+import OnboardingStepper from "../components/onBoarding/OnboardingStepper";
+import OnboardingRolesStep from "../components/onBoarding/OnboardingRolesStep";
+import OnboardingMembersStep from "../components/onBoarding/OnboardingMembersStep";
+import OnboardingProjectStep from "../components/onBoarding/OnboardingProjectStep";
+import OnboardingSummaryStep from "../components/onBoarding/OnboardingSummaryStep";
 import AddManagerModal from "../components/AddManagerModal";
 import { useAuth } from "../hooks/useAuth";
 import {
