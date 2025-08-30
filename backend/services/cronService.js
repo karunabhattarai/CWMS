@@ -34,6 +34,8 @@ class DynamicCronService {
     //   console.log('🕐 Running 10-minute deadline check...');
     const job = cron.schedule('*/1 * * * *', async () => {
       console.log('🕐 Running 1-minute deadline check...');
+    // const job = cron.schedule('0 0 * * *', async () => {
+    //   console.log('🕐 Running daily deadline check at midnight...');
       await this.processScheduledAlerts();
     }, {
       scheduled: true,
