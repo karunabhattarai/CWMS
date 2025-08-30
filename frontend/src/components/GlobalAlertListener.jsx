@@ -1,59 +1,64 @@
 import { useEffect } from "react";
 import { useAuth } from "../context/useAuth";
 import { getSocket } from "../utils/websocket";
-import { useAlerts } from "../hooks/useAlerts";
+import { useToast } from "../context/ToastContext";
 
 export default function GlobalAlertListener() {
   const { user, loading } = useAuth();
-  const { showSuccess, showError, showWarning, showInfo } = useAlerts();
+  const { showToast } = useToast();
 
   useEffect(() => {
     // Don't connect socket until auth is loaded and user is available
     if (loading || !user || !user.id) {
-      console.log("[GlobalAlertListener] Waiting for auth/user:", { loading, user: !!user, userId: user?.id });
       return;
     }
 
     const socket = getSocket();
-    console.log("[GlobalAlertListener] Socket instance:", socket);
-    
-    console.log("[GlobalAlertListener] Emitting join for user:", user.id);
     socket.emit("join", user.id);
-    
+
     socket.on("connect", () => {
-      console.log("[GlobalAlertListener] Socket connected:", socket.id);
       // Re-join room on reconnect
       socket.emit("join", user.id);
     });
-    
+
     socket.on("alert", (alert) => {
-      console.log("[GlobalAlertListener] Received alert:", alert);
-      const truncatedMsg = alert.message.length > 50 ? alert.message.slice(0, 47) + "..." : alert.message;
-      
-      // Add a small delay to ensure the alert displays after any UI state changes
+      const truncatedMsg =
+        alert.message.length > 50
+          ? alert.message.slice(0, 47) + "..."
+          : alert.message;
+
+      // Add a small delay to ensure the toast displays after any UI state changes
       setTimeout(() => {
-        // Use the appropriate alert function based on type
+        // Map alert types to toast types and set appropriate durations
+        let toastType = alert.type;
+        let duration = 5000;
+
         switch (alert.type) {
           case "success":
-            showSuccess(truncatedMsg);
+            toastType = "success";
+            duration = 4000;
             break;
           case "error":
-            showError(truncatedMsg);
+          case "critical":
+            toastType = "error";
+            duration = 7000;
             break;
           case "warning":
-            showWarning(truncatedMsg);
-            break;
-          case "critical":
-            showError(truncatedMsg); // Treat critical as error
+            toastType = "warning";
+            duration = 6000;
             break;
           default:
-            showInfo(truncatedMsg);
+            toastType = "info";
+            duration = 5000;
         }
+
+        // Show the alert message as toast
+        showToast(truncatedMsg, toastType, duration);
       }, 100); // Small delay to let UI settle
     });
-    
+
     socket.on("disconnect", () => {
-      console.log("[GlobalAlertListener] Socket disconnected");
+      // Socket disconnected
     });
 
     return () => {
@@ -61,7 +66,7 @@ export default function GlobalAlertListener() {
       socket.off("connect");
       socket.off("disconnect");
     };
-  }, [user, loading, showSuccess, showError, showWarning, showInfo]);
+  }, [user, loading, showToast]);
 
   return null;
 }

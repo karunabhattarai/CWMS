@@ -1,56 +1,37 @@
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
+import { useToast } from "../context/ToastContext";
 
 export function useAlerts() {
-  const [alerts, setAlerts] = useState([]);
+  const { showToast } = useToast();
 
-  const removeAlert = useCallback((alertId) => {
-    setAlerts((prev) => prev.filter((alert) => alert.id !== alertId));
+  const removeAlert = useCallback(() => {
+    // This function is kept for backward compatibility
+    // but doesn't do anything since toasts auto-remove themselves
   }, []);
 
-  const addAlert = useCallback(
-    (type, message, duration = 5000) => {
-      const alert = {
-        id: Date.now() + Math.random(),
-        type,
-        message,
-        timestamp: new Date(),
-      };
-
-      setAlerts((prev) => [alert, ...prev.slice(0, 4)]);
-
-      if (duration > 0) {
-        setTimeout(() => {
-          removeAlert(alert.id);
-        }, duration);
-      }
-
-      return alert.id;
-    },
-    [removeAlert]
-  );
-
   const showSuccess = useCallback(
-    (message) => addAlert("success", message, 4000),
-    [addAlert]
+    (message) => showToast(message, "success", 4000),
+    [showToast]
   );
 
   const showError = useCallback(
-    (message) => addAlert("error", message, 7000),
-    [addAlert]
+    (message) => showToast(message, "error", 7000),
+    [showToast]
   );
 
   const showWarning = useCallback(
-    (message) => addAlert("warning", message, 6000),
-    [addAlert]
+    (message) => showToast(message, "warning", 6000),
+    [showToast]
   );
 
   const showInfo = useCallback(
-    (message) => addAlert("info", message, 5000),
-    [addAlert]
+    (message) => showToast(message, "info", 5000),
+    [showToast]
   );
 
   return {
-    alerts,
+    // Return empty alerts array for backward compatibility
+    alerts: [],
     removeAlert,
     showSuccess,
     showError,
