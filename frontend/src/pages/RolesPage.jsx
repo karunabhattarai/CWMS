@@ -5,6 +5,7 @@ import RoleList from "../components/roles/RoleList";
 import RoleAddModal from "../components/roles/RoleAddModal";
 import RoleEditModal from "../components/roles/RoleEditModal";
 import { ConfirmationModal } from "../components/common";
+import { useToast } from "../context/ToastContext";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -16,6 +17,7 @@ export default function RolesPage() {
   const [editRole, setEditRole] = useState(null);
   const [deleteRoleId, setDeleteRoleId] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const { showToast } = useToast();
 
   // Get user role from JWT
   const token = localStorage.getItem("token");
@@ -69,7 +71,7 @@ export default function RolesPage() {
       setRoles((prev) => prev.filter((r) => r._id !== id));
       setDeleteRoleId(null);
     } catch (err) {
-      alert(
+      showToast(
         err.response?.data?.message || err.message || "Failed to delete role"
       );
     } finally {

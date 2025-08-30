@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "../context/ToastContext";
 
 export default function AuthForm({
   type,
@@ -28,6 +29,7 @@ export default function AuthForm({
 
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   // Get token from URL for reset password
   useEffect(() => {
@@ -141,7 +143,10 @@ export default function AuthForm({
               role: "superadmin",
             }
           );
-          alert("Email sent for verification. Please verify first to continue");
+          showToast(
+            "Email sent for verification. Please verify first to continue",
+            "success"
+          );
           setMessage(
             response.data.message ||
               "Registration successful! Please check your email for verification."
@@ -200,8 +205,7 @@ export default function AuthForm({
   };
 
   const renderFields = () => {
-    const { email, password, confirmPassword, newPassword, name } =
-      formData;
+    const { email, password, confirmPassword, newPassword, name } = formData;
     const inputClass =
       "px-4 py-2 rounded border border-cyan-200 focus:outline-none focus:ring-2 focus:ring-green-500 font-sans";
 

@@ -5,6 +5,7 @@ import MemberList from "../components/members/MemberList";
 import MemberAddModal from "../components/members/MemberAddModal";
 import MemberEditModal from "../components/members/MemberEditModal";
 import { ConfirmationModal } from "../components/common";
+import { useToast } from "../context/ToastContext";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -17,7 +18,7 @@ export default function MembersPage() {
   const [editMember, setEditMember] = useState(null);
   const [deleteMemberId, setDeleteMemberId] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-
+  const { showToast } = useToast();
   // Get user role from JWT
   const token = localStorage.getItem("token");
   let userRole = "";
@@ -85,7 +86,7 @@ export default function MembersPage() {
       setMembers((prev) => prev.filter((m) => m._id !== id));
       setDeleteMemberId(null);
     } catch (err) {
-      alert(
+      showToast(
         err.response?.data?.message || err.message || "Failed to delete member"
       );
     } finally {
