@@ -42,6 +42,14 @@ export const updateSubtask = async (req, res) => {
       const incompleteDeps = subtask.dependencies.filter(dep => dep.status !== 'Completed');
       if (incompleteDeps.length > 0) {
         console.log("Cannot start subtask, dependencies incomplete:", incompleteDeps);
+        // send alert
+        await sendAlert({
+          recipients: [req.user._id],
+          message: 'Cannot start this subtask until all dependencies are completed',
+          type: "error",
+          redirectTo: `/subtasks/${subtask._id}`,
+          persist: true
+        });
         return res.status(400).json({
           message: 'Cannot start this subtask until all dependencies are completed',
           incompleteDependencies: incompleteDeps.map(dep => ({
