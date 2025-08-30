@@ -45,66 +45,106 @@ export default function ProjectDetailsForm({
           role: roleId,
           assignedMember: candidates[0]?._id || "",
           estimatedDurationDays: tpl.estimatedDurationDays || 1,
+          description: tpl.description || "",
+          dependencies: [],
         };
       })
       .filter(Boolean);
   }, [template, getMembersByRole, getSubtaskTemplateById]);
 
-  // Check for missing roles before allowing task creation
+  // State declarations
+  const [assigned, setAssigned] = useState(initialAssigned);
+  const [projectName, setProjectName] = useState("");
+  const [priority, setPriority] = useState("moderate");
+  const [startDate, setStartDate] = useState(() =>
+    new Date().toISOString().slice(0, 10)
+  );
+  const [errors, setErrors] = useState([]);
+  const [warnings, setWarnings] = useState([]);
+  const [saving, setSaving] = useState(false);
+
+  // Computed values
+  const totalDays = useMemo(
+    () =>
+      (assigned || []).reduce(
+        (sum, s) => sum + (s.estimatedDurationDays || 0),
+        0
+      ),
+    [assigned]
+  );
+
+  const [deadline, setDeadline] = useState(() =>
+    new Date(Date.now() + totalDays * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10)
+  );
+
+  // Check for missing roles before allowing task creation (based on current assigned)
   const missingRoles = useMemo(() => {
     const missing = [];
-    initialAssigned.forEach((sub, index) => {
+    (assigned || []).forEach((sub, index) => {
       const availableMembers = getMembersByRole(sub.role);
 
-      if (availableMembers.length === 0) {
+      if (!sub.role || availableMembers.length === 0) {
         const roleName =
           roles.find((r) => r._id === sub.role)?.name || "Unknown Role";
         missing.push({ index: index + 1, roleName, subtaskName: sub.name });
       }
     });
     return missing;
-  }, [initialAssigned, getMembersByRole, roles]);
+  }, [assigned, getMembersByRole, roles]);
 
-  const [projectName, setProjectName] = useState("");
-  const [priority, setPriority] = useState("moderate");
-  const [startDate, setStartDate] = useState(() =>
-    new Date().toISOString().slice(0, 10)
-  );
-  const totalDays = useMemo(
-    () =>
-      initialAssigned.reduce(
-        (sum, s) => sum + (s.estimatedDurationDays || 0),
-        0
-      ),
-    [initialAssigned]
-  );
-  const [deadline, setDeadline] = useState(() =>
-    new Date(Date.now() + totalDays * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .slice(0, 10)
-  );
-  const [assigned, setAssigned] = useState(initialAssigned);
-  const [errors, setErrors] = useState([]);
-  const [warnings, setWarnings] = useState([]);
-  const [saving, setSaving] = useState(false);
+  // Constants
+  const token = localStorage.getItem("token");
+  const today = new Date().toISOString().slice(0, 10);
+  const twoYearsFromNow = new Date();
+  twoYearsFromNow.setFullYear(twoYearsFromNow.getFullYear() + 2);
+  const maxDate = twoYearsFromNow.toISOString().slice(0, 10);
 
   // Sync assigned state with initialAssigned when it changes
   useEffect(() => {
     setAssigned(initialAssigned);
   }, [initialAssigned]);
 
-  const token = localStorage.getItem("token");
-
-  // Calculate min and max dates
-  const today = new Date().toISOString().slice(0, 10);
-  const twoYearsFromNow = new Date();
-  twoYearsFromNow.setFullYear(twoYearsFromNow.getFullYear() + 2);
-  const maxDate = twoYearsFromNow.toISOString().slice(0, 10);
-
   function handleMemberChange(idx, memberId) {
     setAssigned((prev) =>
       prev.map((s, i) => (i === idx ? { ...s, assignedMember: memberId } : s))
     );
+  }
+
+  function handleNameChange(idx, value) {
+    setAssigned((prev) =>
+      prev.map((s, i) => (i === idx ? { ...s, name: value } : s))
+    );
+  }
+
+  function handleRoleChange(idx, roleId) {
+    setAssigned((prev) =>
+      prev.map((s, i) =>
+        i === idx ? { ...s, role: roleId, assignedMember: "" } : s
+      )
+    );
+  }
+
+  function handleRemove(idx) {
+    const confirmed = window.confirm(
+      "Are you sure you want to remove this subtask?"
+    );
+    if (!confirmed) return;
+    setAssigned((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function handleAddCustom() {
+    const newSub = {
+      subtaskTemplate: null,
+      name: "New Subtask",
+      role: roles[0]?._id || "",
+      assignedMember: "",
+      estimatedDurationDays: 1,
+      description: "",
+      dependencies: [],
+    };
+    setAssigned((prev) => [...(prev || []), newSub]);
   }
 
   function handleDurationChange(idx, newVal) {
@@ -164,17 +204,19 @@ export default function ProjectDetailsForm({
       const response = await axios.post(
         `${API_BASE}/api/task`,
         {
-          taskTemplate: template._id,
+          taskTemplate: template?._id || null,
           name: projectName.trim(),
           deadline,
           startDate,
-          subtasks: assigned.map(
-            ({ subtaskTemplate, assignedMember, estimatedDurationDays }) => ({
-              subtaskTemplate,
-              assignedMember,
-              estimatedDurationDays,
-            })
-          ),
+          subtasks: (assigned || []).map((s) => ({
+            name: s.name,
+            role: s.role,
+            subtaskTemplate: s.subtaskTemplate || null,
+            assignedMember: s.assignedMember || null,
+            estimatedDurationDays: s.estimatedDurationDays || 1,
+            description: s.description || "",
+            dependencies: s.dependencies || [],
+          })),
         },
         {
           headers: {
@@ -321,8 +363,21 @@ export default function ProjectDetailsForm({
                 getMembersByRole={getMembersByRole}
                 onMemberChange={handleMemberChange}
                 onDurationChange={handleDurationChange}
+                onNameChange={handleNameChange}
+                onRoleChange={handleRoleChange}
+                onRemove={handleRemove}
               />
             ))}
+          </div>
+
+          <div className="mt-4">
+            <button
+              type="button"
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 font-medium shadow-sm"
+              onClick={handleAddCustom}
+            >
+              + Add Custom Subtask
+            </button>
           </div>
         </div>
 
