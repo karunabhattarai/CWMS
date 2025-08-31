@@ -15,7 +15,7 @@ class DynamicCronService {
     this.setupHourlyChecker();
     // Run task scanner every 10 days to ensure all tasks have CronJobs
     this.setupTaskScanner();
-    console.log('✅ Dynamic Cron Service initialized');
+    console.log('Dynamic Cron Service initialized');
   }
 
   // Setup frequent checker that processes due alerts (every 10 minutes for testing)
@@ -36,7 +36,7 @@ class DynamicCronService {
     // const job = cron.schedule('*/1 * * * *', async () => {
     //   console.log('🕐 Running 1-minute deadline check...');
     const job = cron.schedule('0 0 * * *', async () => {
-      console.log('🕐 Running daily deadline check at midnight...');
+      console.log('Running daily deadline check at midnight...');
       await this.processScheduledAlerts();
     }, {
       scheduled: true,
@@ -44,14 +44,14 @@ class DynamicCronService {
     });
     
     this.jobs.set('hourlyChecker', job);
-    console.log('⏰ 1-minute deadline checker started (testing mode)');
+    // console.log('Daily deadline checker started (testing mode)');
   }
 
   // Setup task scanner that runs every 10 days to ensure all tasks have CronJobs
   setupTaskScanner() {
     // Run every 10 days at 2 AM
     const scannerJob = cron.schedule('0 2 */10 * *', async () => {
-      console.log('🔍 Running comprehensive task scanner (every 10 days)...');
+      console.log('Running comprehensive task scanner (every 10 days)...');
       await this.scanAllTasksForCronJobs();
     }, {
       scheduled: true,
@@ -59,20 +59,20 @@ class DynamicCronService {
     });
     
     this.jobs.set('taskScanner', scannerJob);
-    console.log('🔍 Task scanner scheduled: runs every 10 days at 2 AM');
+    console.log('Task scanner scheduled: runs every 10 days at 2 AM');
   }
 
   // Scan all tasks and ensure they have proper CronJobs
   async scanAllTasksForCronJobs() {
     try {
-      console.log('🚀 Starting comprehensive task scan for CronJob validation...');
+      console.log('Starting comprehensive task scan for CronJob validation...');
       
       // Get all active tasks (not completed/cancelled)
       const activeTasks = await Task.find({
         status: { $nin: ['Completed', 'Cancelled'] }
       }).populate('subtasks');
 
-      console.log(`📋 Found ${activeTasks.length} active tasks to scan`);
+      console.log(`Found ${activeTasks.length} active tasks to scan`);
       let updatedCount = 0;
 
       for (const task of activeTasks) {
@@ -86,18 +86,18 @@ class DynamicCronService {
           tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
           
           if (existingCronJobs.length === 0 || taskLastModified > tenDaysAgo) {
-            console.log(`🔄 Updating CronJobs for task: "${task.name}" (${existingCronJobs.length} existing jobs)`);
+            console.log(`Updating CronJobs for task: "${task.name}" (${existingCronJobs.length} existing jobs)`);
             await this.updateCronListForTask(task._id);
             updatedCount++;
           }
         } catch (taskError) {
-          console.error(`❌ Error processing task ${task._id}:`, taskError.message);
+          console.error(`Error processing task ${task._id}:`, taskError.message);
         }
       }
 
-      console.log(`✅ Task scan completed: ${updatedCount}/${activeTasks.length} tasks updated`);
+      console.log(`Task scan completed: ${updatedCount}/${activeTasks.length} tasks updated`);
     } catch (error) {
-      console.error('❌ Error during comprehensive task scan:', error);
+      console.error('Error during comprehensive task scan:', error);
     }
 
   }
@@ -105,7 +105,7 @@ class DynamicCronService {
   // Update cron list when tasks are created/updated
   async updateCronListForTask(taskId) {
     try {
-      console.log(`🔄 Updating cron list for task: ${taskId}`);
+      console.log(`Updating cron list for task: ${taskId}`);
       
       // Remove existing entries for this task
       await this.removeCronEntriesForTask(taskId);
@@ -113,24 +113,24 @@ class DynamicCronService {
       // Get task with subtasks
       const task = await Task.findById(taskId).populate('subtasks');
       if (!task) {
-        console.log(`❌ Task ${taskId} not found`);
+        console.log(` Task ${taskId} not found`);
         return;
       }
 
-      console.log(`📋 Task found: "${task.name}" with ${task.subtasks.length} subtasks`);
+      console.log(`Task found: "${task.name}" with ${task.subtasks.length} subtasks`);
 
       // Calculate and add task-level deadlines
       await this.addTaskDeadlinesToCronList(task);
 
       // Calculate and add subtask-level deadlines
       for (const subtask of task.subtasks) {
-        console.log(`🔧 Processing subtask: "${subtask.name}" (assigned: ${!!subtask.assignedMember}, status: ${subtask.status})`);
+        console.log(` Processing subtask: "${subtask.name}" (assigned: ${!!subtask.assignedMember}, status: ${subtask.status})`);
         await this.addSubtaskDeadlinesToCronList(subtask, task);
       }
 
-      console.log(`📅 Updated cron list for task: ${task.name}`);
+      console.log(`Updated cron list for task: ${task.name}`);
     } catch (error) {
-      console.error('❌ Error updating cron list for task:', error);
+      console.error('Error updating cron list for task:', error);
     }
   }
 
@@ -176,12 +176,12 @@ class DynamicCronService {
     const softDeadlineDate = new Date(estimatedDeadlineDate);
     softDeadlineDate.setDate(softDeadlineDate.getDate() - 1);
 
-    console.log(`⏰ Subtask "${subtask.name}": estimatedDeadline=${estimatedDeadlineDate.toDateString()}, softDeadline=${softDeadlineDate.toDateString()}, today=${today.toDateString()}`);
+    console.log(`Subtask "${subtask.name}": estimatedDeadline=${estimatedDeadlineDate.toDateString()}, softDeadline=${softDeadlineDate.toDateString()}, today=${today.toDateString()}`);
 
     // Add to database if deadlines are in the future and subtask is assigned
     if (subtask.assignedMember && subtask.status !== 'Completed') {
       if (softDeadlineDate >= today) {
-        console.log(`📅 Creating soft deadline alert for subtask "${subtask.name}" scheduled for ${softDeadlineDate.toDateString()}`);
+        console.log(`Creating soft deadline alert for subtask "${subtask.name}" scheduled for ${softDeadlineDate.toDateString()}`);
         await CronJob.create({
           alertType: 'subtask_soft_deadline',
           scheduledDate: softDeadlineDate,
@@ -196,11 +196,11 @@ class DynamicCronService {
           }
         });
       } else {
-        console.log(`⏰ Soft deadline for "${subtask.name}" is in the past (${softDeadlineDate.toDateString()}), skipping`);
+        console.log(`Soft deadline for "${subtask.name}" is in the past (${softDeadlineDate.toDateString()}), skipping`);
       }
 
       if (estimatedDeadlineDate >= today) {
-        console.log(`📅 Creating hard deadline alert for subtask "${subtask.name}" scheduled for ${estimatedDeadlineDate.toDateString()}`);
+        console.log(`Creating hard deadline alert for subtask "${subtask.name}" scheduled for ${estimatedDeadlineDate.toDateString()}`);
         await CronJob.create({
           alertType: 'subtask_hard_deadline',
           scheduledDate: estimatedDeadlineDate,
@@ -223,7 +223,7 @@ class DynamicCronService {
     try {
       const today = new Date();
       today.setHours(0, 0, 0, 0); // Set to start of day
-      console.log(`🔍 Checking for due alerts on ${today.toDateString()}`);
+      console.log(`Checking for due alerts on ${today.toDateString()}`);
       
       // Find all pending alerts scheduled for today or earlier
       const dueAlerts = await CronJob.find({
@@ -231,11 +231,11 @@ class DynamicCronService {
         scheduledDate: { $lte: today }
       }).populate('taskId').populate('subtaskId');
 
-      console.log(`🎯 Found ${dueAlerts.length} due alerts to process`);
+      console.log(` Found ${dueAlerts.length} due alerts to process`);
       
       // Process each alert
       for (const cronJob of dueAlerts) {
-        console.log(`📤 Processing alert: ${cronJob.alertType} for ${cronJob.taskId?.name || 'Unknown Task'} - scheduled for ${cronJob.scheduledDate.toDateString()}`);
+        console.log(`Processing alert: ${cronJob.alertType} for ${cronJob.taskId?.name || 'Unknown Task'} - scheduled for ${cronJob.scheduledDate.toDateString()}`);
         
         const alertResult = await this.processAlert(cronJob);
         
@@ -244,21 +244,21 @@ class DynamicCronService {
           cronJob.status = 'skipped';
           cronJob.processedAt = new Date();
           cronJob.skipReason = alertResult.reason;
-          console.log(`⏭️ Alert skipped: ${alertResult.reason}`);
+          console.log(`Alert skipped: ${alertResult.reason}`);
         } else {
           cronJob.status = 'processed';
           cronJob.processedAt = new Date();
-          console.log(`✅ Alert processed successfully`);
+          console.log(`Alert processed successfully`);
         }
         
         await cronJob.save();
       }
 
       if (dueAlerts.length > 0) {
-        console.log(`✅ Processed ${dueAlerts.length} scheduled alerts`);
+        console.log(`Processed ${dueAlerts.length} scheduled alerts`);
       }
     } catch (error) {
-      console.error('❌ Error processing scheduled alerts:', error);
+      console.error('Error processing scheduled alerts:', error);
     }
   }
 
@@ -267,55 +267,55 @@ class DynamicCronService {
     try {
       const task = cronJob.taskId;
       if (!task) {
-        console.log(`❌ No task found for cronJob ${cronJob._id}`);
+        console.log(`No task found for cronJob ${cronJob._id}`);
         return { skipped: true, reason: 'Task not found' };
       }
 
       switch (cronJob.alertType) {
         case 'subtask_soft_deadline':
           if (!cronJob.subtaskId) {
-            console.log(`❌ No subtask ID found for cronJob ${cronJob._id}`);
+            console.log(` No subtask ID found for cronJob ${cronJob._id}`);
             return { skipped: true, reason: 'Subtask ID not found' };
           }
           
           // Fetch current subtask status (not the cached/populated one)
           const currentSubtask = await Subtask.findById(cronJob.subtaskId).populate('assignedMember');
           if (!currentSubtask) {
-            console.log(`❌ Subtask ${cronJob.subtaskId} not found`);
+            console.log(`Subtask ${cronJob.subtaskId} not found`);
             return { skipped: true, reason: 'Subtask not found' };
           }
           
-          console.log(`🔔 Processing soft deadline for subtask "${currentSubtask.name}" (current status: ${currentSubtask.status})`);
+          console.log(`Processing soft deadline for subtask "${currentSubtask.name}" (current status: ${currentSubtask.status})`);
           
           if (currentSubtask.status === 'Completed') {
-            console.log(`✅ Subtask "${currentSubtask.name}" already completed - skipping notification`);
+            console.log(`Subtask "${currentSubtask.name}" already completed - skipping notification`);
             return { skipped: true, reason: 'Subtask already completed' };
           } else {
-            console.log(`📨 Sending soft deadline alert for "${currentSubtask.name}"`);
+            console.log(`Sending soft deadline alert for "${currentSubtask.name}"`);
             await softDeadlineAlert(currentSubtask, task);
             return { skipped: false };
           }
 
         case 'subtask_hard_deadline':
           if (!cronJob.subtaskId) {
-            console.log(`❌ No subtask ID found for cronJob ${cronJob._id}`);
+            console.log(`No subtask ID found for cronJob ${cronJob._id}`);
             return { skipped: true, reason: 'Subtask ID not found' };
           }
           
           // Fetch current subtask status
           const currentHardSubtask = await Subtask.findById(cronJob.subtaskId).populate('assignedMember');
           if (!currentHardSubtask) {
-            console.log(`❌ Subtask ${cronJob.subtaskId} not found`);
+            console.log(` Subtask ${cronJob.subtaskId} not found`);
             return { skipped: true, reason: 'Subtask not found' };
           }
           
-          console.log(`🔔 Processing hard deadline for subtask "${currentHardSubtask.name}" (current status: ${currentHardSubtask.status})`);
+          console.log(`Processing hard deadline for subtask "${currentHardSubtask.name}" (current status: ${currentHardSubtask.status})`);
           
           if (currentHardSubtask.status === 'Completed') {
-            console.log(`✅ Subtask "${currentHardSubtask.name}" already completed - skipping notification`);
+            console.log(`Subtask "${currentHardSubtask.name}" already completed - skipping notification`);
             return { skipped: true, reason: 'Subtask already completed' };
           } else {
-            console.log(`📨 Sending hard deadline alert for "${currentHardSubtask.name}"`);
+            console.log(`Sending hard deadline alert for "${currentHardSubtask.name}"`);
             await hardDeadlineAlert(currentHardSubtask, task);
             return { skipped: false };
           }
@@ -343,11 +343,11 @@ class DynamicCronService {
           return { skipped: true, reason: 'No manager found' };
 
         default:
-          console.log(`⚠️ Unknown alert type: ${cronJob.alertType}`);
+          console.log(`Unknown alert type: ${cronJob.alertType}`);
           return { skipped: true, reason: 'Unknown alert type' };
       }
     } catch (error) {
-      console.error(`❌ Error processing alert ${cronJob._id}:`, error);
+      console.error(`Error processing alert ${cronJob._id}:`, error);
       return { skipped: true, reason: `Error: ${error.message}` };
     }
   }
@@ -362,7 +362,7 @@ class DynamicCronService {
       
       console.log(`�️ Cancelled ${result.modifiedCount} cron entries for task ${taskId}`);
     } catch (error) {
-      console.error('❌ Error removing cron entries for task:', error);
+      console.error('Error removing cron entries for task:', error);
     }
   }
 
@@ -383,10 +383,10 @@ class DynamicCronService {
       }
       
       // Log the response for tracking
-      console.log(`📝 Soft deadline response for ${subtask.name}: ${canComplete ? 'Can complete' : 'Cannot complete'}`);
+      console.log(`Soft deadline response for ${subtask.name}: ${canComplete ? 'Can complete' : 'Cannot complete'}`);
       
     } catch (error) {
-      console.error('❌ Error handling soft deadline response:', error);
+      console.error('Error handling soft deadline response:', error);
     }
   }
 
@@ -418,7 +418,7 @@ class DynamicCronService {
         upcoming
       };
     } catch (error) {
-      console.error('❌ Error getting cron list status:', error);
+      console.error('Error getting cron list status:', error);
       return { totalScheduled: 0, byType: {}, upcoming: [] };
     }
   }
@@ -428,13 +428,13 @@ class DynamicCronService {
     // Stop all cron jobs
     for (const [name, job] of this.jobs.entries()) {
       job.stop();
-      console.log(`🛑 Stopped cron job: ${name}`);
+      console.log(`Stopped cron job: ${name}`);
     }
     
     // Clear maps
     this.jobs.clear();
     
-    console.log('🧹 Dynamic Cron Service destroyed');
+    console.log('Dynamic Cron Service destroyed');
   }
 }
 
